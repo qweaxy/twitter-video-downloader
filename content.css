@@ -1,0 +1,23 @@
+.xfd-controls { flex-direction: row !important; align-items: center !important; }
+.xfd-button {
+  all: unset; box-sizing: border-box; display: inline-flex; flex: 0 0 32px;
+  align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 999px; color: inherit; cursor: pointer;
+  transition: color 120ms, background-color 120ms;
+}
+.xfd-button svg { width: 18px; height: 18px; pointer-events: none; }
+.xfd-button:hover { color: #1d9bf0 !important; background: rgba(29,155,240,.1); }
+.xfd-button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 1px; }
+.xfd-button:disabled { opacity: .45; cursor: progress; }
+.xfd-panel, .xfd-toast {
+  position: fixed; z-index: 2147483647; font: 14px/1.45 system-ui,sans-serif;
+  color: #e7e9ea; background: #16181c; border: 1px solid #536471;
+  border-radius: 12px; box-shadow: 0 4px 24px #0005;
+}
+.xfd-panel { padding: 6px; width: 216px; }
+.xfd-panel button { display: block; width: 100%; border: 0; padding: 11px 12px;
+  background: transparent; color: inherit; text-align: left; cursor: pointer; border-radius: 7px; font: inherit; }
+.xfd-panel button:hover, .xfd-panel button:focus-visible { background: #1d9bf026; }
+.xfd-toast { bottom: 28px; left: 50%; transform: translateX(-50%); padding: 12px 18px;
+  max-width: min(440px, calc(100vw - 40px)); }
+@media (prefers-reduced-motion: reduce) { .xfd-button { transition: none; } }
