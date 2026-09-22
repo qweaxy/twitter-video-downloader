@@ -1,18 +1,83 @@
 {
-  "extensionDescription": {"message": "A minimal MP4 download button right in your X feed."},
-  "downloadVideo": {"message": "Download video"},
-  "chooseVideo": {"message": "Choose a video"},
+  "extensionDescription": {
+    "message": "Download videos as MP4 and animations as GIF directly from your X feed."
+  },
+  "downloadVideo": {
+    "message": "Download video"
+  },
+  "chooseVideo": {
+    "message": "Choose a video or GIF"
+  },
   "downloadVideoNumber": {
     "message": "Download video $NUMBER$",
-    "placeholders": {"number": {"content": "$1", "example": "2"}}
+    "placeholders": {
+      "number": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
   },
-  "downloadStarted": {"message": "Download started. You can find the file in Firefox downloads."},
-  "videoFailed": {"message": "Could not get the video."},
-  "extensionRestarted": {"message": "The extension restarted. Reload the X page."},
-  "reloadPage": {"message": "Reload the X page and try again."},
-  "videoSaved": {"message": "Video saved."},
-  "downloadInterrupted": {"message": "Download interrupted. Check Firefox downloads and try again."},
-  "linkMissing": {"message": "Video link not found yet. Open the post, reload the page, and try again."},
-  "variantUnavailable": {"message": "This video version is unavailable."},
-  "downloadFailed": {"message": "Firefox could not start the download. Reload the post and try again."}
+  "downloadStarted": {
+    "message": "Download started. You can find the file in Firefox downloads."
+  },
+  "videoFailed": {
+    "message": "Could not get the video."
+  },
+  "extensionRestarted": {
+    "message": "The extension restarted. Reload the X page."
+  },
+  "reloadPage": {
+    "message": "Reload the X page and try again."
+  },
+  "videoSaved": {
+    "message": "Video saved."
+  },
+  "downloadInterrupted": {
+    "message": "Download interrupted. Check Firefox downloads and try again."
+  },
+  "linkMissing": {
+    "message": "Video link not found yet. Open the post, reload the page, and try again."
+  },
+  "variantUnavailable": {
+    "message": "This video version is unavailable."
+  },
+  "downloadFailed": {
+    "message": "Firefox could not start the download. Reload the post and try again."
+  },
+  "downloadMedia": {
+    "message": "Download video or GIF"
+  },
+  "downloadGif": {
+    "message": "Download GIF"
+  },
+  "downloadGifNumber": {
+    "message": "Download GIF $NUMBER$",
+    "placeholders": {
+      "number": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "gifSaved": {
+    "message": "GIF saved."
+  },
+  "gifConverting": {
+    "message": "Creating GIF… $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "gifBusy": {
+    "message": "Another GIF is being created. Please wait and try again."
+  },
+  "gifFailed": {
+    "message": "Could not create the GIF. Reload the post and try again. No MP4 was saved."
+  },
+  "gifTooLarge": {
+    "message": "This animation exceeds the local GIF conversion limits (120 seconds, 2,073,600 pixels, 50 MiB source or 128 MiB GIF). No file was saved."
+  }
 }

@@ -24,7 +24,7 @@ const root = path.join(__dirname, '..');
     await page.evaluate(() => {
       window.mockCounts={'100':1,'200':2};window.downloadCalls=[];
       window.browser={i18n:{getMessage:(key,value)=>window.catalog[key]?.message.replace('$NUMBER$',value)||''},runtime:{onMessage:{addListener:fn=>{window.fromBackground=fn;}},sendMessage:async m=>{
-        if(m.type==='xfd:lookup')return Object.fromEntries(m.ids.map(id=>[id,window.mockCounts[id]||0]));
+        if(m.type==='xfd:lookup')return Object.fromEntries(m.ids.map(id=>[id,Array(window.mockCounts[id]||0).fill('video')]));
         if(m.type==='xfd:download'){window.downloadCalls.push(m);return {ok:true};}
       }}};
     });

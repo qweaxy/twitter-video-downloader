@@ -2,6 +2,7 @@
 const t = key => browser.i18n.getMessage(key);
 const tabMedia = new Map();
 const activeDownloads = new Map();
+let gifJob = null;
 const MAX_RESPONSE = 12 * 1024 * 1024;
 const MAX_POSTS = 600;
 
@@ -51,9 +52,13 @@ browser.webRequest.onBeforeRequest.addListener(details => {
   types: ["xmlhttprequest"]
 }, ["blocking"]);
 
-browser.tabs.onRemoved.addListener(tabId => { tabMedia.delete(tabId); });
+function clearTab(tabId) {
+  tabMedia.delete(tabId);
+  if (gifJob?.tabId === tabId) gifJob.controller.abort();
+}
+browser.tabs.onRemoved.addListener(clearTab);
 browser.tabs.onUpdated.addListener((tabId, change) => {
-  if (change.status === "loading") tabMedia.delete(tabId);
+  if (change.status === "loading") clearTab(tabId);
 });
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
@@ -64,7 +69,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   const cache = tabMedia.get(sender.tab.id);
   if (message?.type === "xfd:lookup") {
     const ids = Array.isArray(message.ids) ? message.ids.slice(0, 100) : [];
-    return Object.fromEntries(ids.filter(id => /^\d+$/.test(id)).map(id => [id, cache?.get(id)?.length || 0]));
+    return Object.fromEntries(ids.filter(id => /^\d+$/.test(id)).map(id => [id, (cache?.get(id) || []).map(item => item.type)]));
   }
   if (message?.type !== "xfd:download" || !/^\d+$/.test(message.id)) return;
   const media = cache?.get(message.id);
@@ -72,23 +77,53 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   const index = Number.isInteger(message.index) ? message.index : 0;
   const item = media[index];
   if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
+  let objectURL = null, conversion = null, timeout = null;
   try {
+    if (item.type === "gif") {
+      if (gifJob) return {ok:false,error:t("gifBusy")};
+      conversion = {tabId:sender.tab.id,controller:new AbortController()};
+      gifJob = conversion;
+      timeout = setTimeout(() => conversion.controller.abort(),10 * 60 * 1000);
+      let lastProgress = -1;
+      const progress = percent => {
+        const step = Math.floor(percent / 5) * 5;
+        if (step === lastProgress) return;
+        lastProgress = step;
+        browser.tabs.sendMessage(sender.tab.id,{type:"xfd:converting",id:message.id,percent:step}).catch(() => {});
+      };
+      progress(0);
+      const blob = await XFDGif.convert(item.url,progress,conversion.controller.signal);
+      if (conversion.controller.signal.aborted) throw new Error("gifFailed");
+      objectURL = URL.createObjectURL(blob);
+    }
     const id = await browser.downloads.download({
-      url: item.url, filename: `X_${message.id}_${index + 1}.mp4`,
+      url: objectURL || item.url, filename: `X_${message.id}_${index + 1}.${item.type === "gif" ? "gif" : "mp4"}`,
       conflictAction: "uniquify", incognito: !!sender.tab.incognito
     });
-    activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id});
+    activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id, objectURL, kind:item.type});
+    objectURL = null; // Owned by the download until completion/interruption.
+    // Small blob downloads can finish before download() resolves.
+    browser.downloads.search({id}).then(items => {
+      const state = items[0]?.state;
+      if (state) finishDownload({id,state:{current:state}});
+    }).catch(() => {});
     return {ok: true};
-  } catch {
-    return {ok: false, error: t("downloadFailed")};
+  } catch (error) {
+    return {ok: false, error: t(item.type === "gif" ? (error.message === "gifTooLarge" ? "gifTooLarge" : "gifFailed") : "downloadFailed")};
+  } finally {
+    if (objectURL) URL.revokeObjectURL(objectURL);
+    if (timeout) clearTimeout(timeout);
+    if (conversion && gifJob === conversion) gifJob = null;
   }
 });
 
-browser.downloads.onChanged.addListener(delta => {
+function finishDownload(delta) {
   const item = activeDownloads.get(delta.id);
   if (!item || !["complete", "interrupted"].includes(delta.state?.current)) return;
   activeDownloads.delete(delta.id);
+  if (item.objectURL) URL.revokeObjectURL(item.objectURL);
   browser.tabs.sendMessage(item.tabId, {
-    type: "xfd:finished", id: item.postId, ok: delta.state.current === "complete"
+    type: "xfd:finished", id: item.postId, kind:item.kind, ok: delta.state.current === "complete"
   }).catch(() => {});
-});
+}
+browser.downloads.onChanged.addListener(finishDownload);

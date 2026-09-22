@@ -24,7 +24,8 @@
       const variants = Array.isArray(m.video_info?.variants) ? m.video_info.variants : [];
       const best = variants.filter(v => v.content_type === "video/mp4" && mp4URL(v.url))
         .sort((a, b) => (Number(b.bitrate) || 0) - (Number(a.bitrate) || 0))[0];
-      return best ? {url: mp4URL(best.url), bitrate: Number(best.bitrate) || 0} : null;
+      return best ? {url: mp4URL(best.url), bitrate: Number(best.bitrate) || 0,
+        type: m.type === "animated_gif" ? "gif" : "video"} : null;
     }).filter(Boolean);
   }
   function visibleMedia(node, depth = 0) {

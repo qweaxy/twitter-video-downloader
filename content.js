@@ -50,8 +50,9 @@
     const id = postId(button.closest(articleSelector));
     if (!id) return;
     try {
-      const counts = await browser.runtime.sendMessage({type: "xfd:lookup", ids: [id]});
-      const count = counts?.[id] || 0;
+      const kinds = await browser.runtime.sendMessage({type: "xfd:lookup", ids: [id]});
+      const types = kinds?.[id] || [];
+      const count = types.length;
       if (count <= 1) return download(button, id, 0);
       closePanel();
       panelOwner = button;
@@ -59,7 +60,7 @@
       panel.setAttribute("role", "group"); panel.setAttribute("aria-label", t("chooseVideo"));
       for (let i = 0; i < count; i++) {
         const option = document.createElement("button"); option.type = "button";
-        option.textContent = t("downloadVideoNumber", String(i + 1));
+        option.textContent = t(types[i] === "gif" ? "downloadGifNumber" : "downloadVideoNumber", String(i + 1));
         option.addEventListener("click", e => { e.stopPropagation(); download(button, id, i); });
         panel.append(option);
       }
@@ -85,11 +86,13 @@
     button.style.left = `${left}px`;
     button.style.top = `${top}px`;
   }
-  function addButton(article) {
+  function addButton(article, kinds) {
     const caret = article.querySelector('[data-testid="caret"]');
     if (!caret || !caret.parentElement) return;
     const existing = article.querySelector(".xfd-button");
+    const label = t(kinds.length === 1 ? (kinds[0] === "gif" ? "downloadGif" : "downloadVideo") : "downloadMedia");
     if (existing?.parentElement === caret.parentElement) {
+      existing.title = label; existing.setAttribute("aria-label",label);
       syncColor(existing, caret);
       placeButton(existing, caret);
       return;
@@ -97,7 +100,7 @@
     existing?.remove();
     const button = document.createElement("button");
     button.className = "xfd-button"; button.type = "button";
-    button.title = t("downloadVideo"); button.setAttribute("aria-label", t("downloadVideo"));
+    button.title = label; button.setAttribute("aria-label", label);
     syncColor(button, caret);
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
@@ -125,7 +128,7 @@
     } catch { return; }
     for (const [article, id] of entries) {
       if (!article.isConnected || postId(article) !== id) continue;
-      if (counts[id] || article.querySelector('video, [data-testid="videoPlayer"]')) addButton(article);
+      if (counts[id]?.length || article.querySelector('video, [data-testid="videoPlayer"]')) addButton(article,counts[id] || []);
       else article.querySelector(".xfd-button")?.remove();
     }
   }
@@ -137,7 +140,8 @@
   });
   browser.runtime.onMessage.addListener(message => {
     if (message.type === "xfd:updated") schedule();
-    if (message.type === "xfd:finished") notify(t(message.ok ? "videoSaved" : "downloadInterrupted"));
+    if (message.type === "xfd:converting") notify(t("gifConverting",String(message.percent)));
+    if (message.type === "xfd:finished") notify(t(message.ok ? (message.kind === "gif" ? "gifSaved" : "videoSaved") : "downloadInterrupted"));
   });
   document.addEventListener("pointerdown", e => {
     if (panel && !panel.contains(e.target) && !panelOwner?.contains(e.target)) closePanel();

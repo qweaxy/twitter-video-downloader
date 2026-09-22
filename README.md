@@ -1,70 +1,222 @@
-# X Feed Download — Firefox, версия 0.1.1
+# X Feed Download
 
-Расширение для настольного Firefox 115+. Маленькая иконка загрузки слева от «⋯» в заголовке поста. Серый цвет берётся у SVG соседней кнопки, при наведении иконка становится синей.
+**Download videos and GIFs without leaving your X feed.**  
+**Скачивай видео и GIF прямо из ленты X.**
 
-## Изменения 0.1.1
+A lightweight extension for desktop Firefox. / Лёгкое расширение для настольного Firefox.
 
-- Кнопка размещена абсолютно относительно «⋯»: её высота больше не увеличивает строку заголовка и не сдвигает текст и видео. Направление flex-контейнеров X не меняется.
-- Цвет берётся у самой SVG-иконки «⋯», а не у её более светлого родителя. Толщина линии уменьшена с 1,7 до 1,5.
-- Все подсказки, сообщения о загрузке, ошибки, подписи меню и описание дополнения локализованы через `browser.i18n`. Русский интерфейс Firefox → русский; английский и неподдерживаемые языки → английский. Язык страницы X не влияет на выбор. После смены языка интерфейса Firefox перезапусти браузер/дополнение и обнови вкладку X.
+[English](#english) · [Русский](#русский)
 
-## Обновление с 0.1.0
+---
 
-При временной установке замени содержимое папки расширения файлами из этого архива, затем нажми «Перезагрузить» у X Feed Download в `about:debugging#/runtime/this-firefox`. Обязательно обнови открытые вкладки X, чтобы убрать код и стили предыдущей версии. Можно вместо этого удалить временное дополнение и загрузить новый `manifest.json`.
+## English
 
-Если предыдущая версия подписана Mozilla, отправь 0.1.1 как новую версию того же дополнения в Developer Hub и установи полученный подписанный XPI. ID дополнения сохранён.
+X Feed Download adds a small download icon next to the **⋯** menu on posts with video. Save a clip directly from your feed, without copying the post URL or opening a separate downloader website.
 
-## Установка для проверки
+The button follows X’s visual style: a muted icon with a blue hover state. Downloads come directly from X’s video servers at `video.twimg.com`.
 
-1. Распакуй архив в отдельную папку.
-2. В Firefox открой `about:debugging#/runtime/this-firefox`.
-3. Нажми «Загрузить временное дополнение…» (Load Temporary Add-on).
+### Features
+
+- **Download from the feed.** Click the icon beside the post’s menu to start saving a video.
+- **Automatic MP4 selection.** The extension chooses the available MP4 variant with the highest reported bitrate.
+- **Multiple videos.** If a post has several downloadable videos, choose one from a compact menu.
+- **Reposts and quotes.** Supports video metadata in reposts and quoted posts. If a quote has its own video, that video takes priority.
+- **Real GIF files.** Media marked as an animation by X is converted locally into an animated `.gif`. Ordinary videos remain `.mp4`.
+- **English and Russian.** Messages follow the Firefox interface language, with English as the fallback for other languages.
+- **Local processing.** No separate downloader server, API key, or additional account is required.
+
+### Requirements
+
+Desktop Firefox **115 or later**, with access to the post on `x.com` or `twitter.com`.
+
+### Installation
+
+#### Try it locally
+
+1. Extract the extension archive into a folder.
+2. Open `about:debugging#/runtime/this-firefox` in Firefox.
+3. Select **Load Temporary Add-on…**.
+4. Choose `manifest.json` from the extracted folder.
+5. Reload your open X tabs.
+
+A temporary installation lasts until Firefox closes. Keep the extracted folder if you want to load it again.
+
+#### Install permanently
+
+Standard Firefox requires a Mozilla-signed extension for permanent installation. The source ZIP is unsigned.
+
+To sign a personal build, submit the ZIP through the [Mozilla Add-ons Developer Hub](https://addons.mozilla.org/developers/) and choose **On your own** for distribution outside the public catalog. Once Mozilla provides the signed `.xpi`, install it through Firefox’s add-on manager.
+
+### How to use
+
+1. Find a post with video.
+2. Click the download icon immediately to the left of **⋯**.
+3. If the post contains multiple videos, choose the one you want.
+4. Check Firefox’s downloads panel for progress and the saved file.
+
+Files are named `X_<post ID>_<media number>.mp4` for videos and `X_<post ID>_<media number>.gif` for animations. Firefox’s download settings determine where they are saved and whether a file picker appears.
+
+For GIFs, the extension first retrieves X’s MP4 animation source and converts it into a looping GIF in your browser. A progress message appears during conversion. Keep the X tab open until the download starts; reloading or closing it cancels conversion. Only one GIF is converted at a time; ordinary MP4 downloads remain available.
+
+The extension needs to receive the post’s video metadata after it loads. If a link is not found, open the post itself, reload the page, and try again.
+
+### Privacy and permissions
+
+Video metadata is processed locally in your browser. The extension does not send post data to an external downloader or analytics service, and it does not request your password, an API key, or permission to read cookies.
+
+It temporarily keeps post IDs, media types, and video URLs/bitrates in memory, with a limit of 600 posts per tab. This cache is cleared when the tab reloads or closes. GIF conversion also holds the source animation and encoded frames in memory until they can be released. Direct-message requests are not among the operations it processes.
+
+| Permission | Purpose |
+| --- | --- |
+| Access to X/Twitter and their API domains | Add the button and read video metadata in supported post and timeline responses. |
+| `webRequest` and `webRequestBlocking` | Read those responses while passing their original contents through to the page. |
+| `downloads` | Save video files and report completion or interruption. |
+| Access to `video.twimg.com` | Access X’s video host. |
+
+### Limitations
+
+- Only available direct MP4 variants are supported. HLS-only streams (`.m3u8`), live streams without an MP4 variant, and third-party video players are not supported.
+- The highest-bitrate MP4 is not necessarily the creator’s original upload quality.
+- GIFs retain the source dimensions, use 20 frames per second and up to 256 colors per frame, and loop indefinitely. They may be much larger than their MP4 source; conversion can change colors and smoothness. This produces a new GIF, not the original uploaded GIF file.
+- Local GIF conversion supports animations up to 120 seconds and 2,073,600 pixels per frame (for example, 1920 × 1080). The source is limited to 50 MiB, the encoded GIF to 128 MiB, and processing to 10 minutes. If conversion fails or a limit is exceeded, an error is shown; the extension does not save an MP4 instead.
+- Changes to X’s page layout or API may require an extension update.
+- English and Russian are the supported interface languages. The language setting inside X does not control the extension’s language.
+
+### Updating and troubleshooting
+
+For a temporary installation, replace the files in the extension folder, click **Reload** in `about:debugging`, and reload your X tabs. For a signed installation, install a signed newer version of the same extension.
+
+If a download fails, check Firefox’s downloads panel and reload the post to obtain fresh metadata. When reporting a problem, include your Firefox version, extension version, a post URL if it can be shared, and the error message.
+
+### Development
+
+The extension uses plain JavaScript, CSS, and Firefox WebExtensions APIs. No build step is required.
+
+Run the core tests from the extension folder:
+
+```sh
+node --test tests/core.test.cjs
+```
+
+Conversion and encoder tests:
+
+```sh
+node --test tests/converter.test.cjs tests/gif.test.cjs
+```
+
+The encoder test additionally requires Python 3 and Pillow. It independently decodes generated GIFs and checks their frames, colors, timing, and looping. The converter test simulates browser media APIs; live Firefox decoding still needs a browser check.
+
+The optional UI test requires Playwright and its Chromium browser:
+
+```sh
+node tests/ui.test.cjs
+```
+
+The UI test uses a synthetic page; it does not replace testing the extension in Firefox on X.
+
+---
+
+## Русский
+
+X Feed Download добавляет небольшую иконку скачивания рядом с меню **⋯** в постах с видео. Сохраняй ролики прямо из ленты, без копирования ссылки на пост и перехода на отдельный сайт-загрузчик.
+
+Кнопка оформлена в стиле X: приглушённая иконка с синей подсветкой при наведении. Видео скачиваются напрямую с серверов X — `video.twimg.com`.
+
+### Возможности
+
+- **Скачивание из ленты.** Нажми иконку рядом с меню поста, чтобы сохранить видео.
+- **Автоматический выбор MP4.** Расширение выбирает доступный MP4-вариант с наибольшим указанным битрейтом.
+- **Несколько видео.** Если в посте несколько доступных роликов, выбери нужный в небольшом меню.
+- **Репосты и цитаты.** Поддерживаются метаданные видео из репостов и цитируемых постов. Если у цитаты есть собственное видео, приоритет отдаётся ему.
+- **Настоящие GIF-файлы.** Медиа, отмеченные X как анимации, локально преобразуются в анимированный `.gif`. Обычные видео сохраняются в `.mp4`.
+- **Русский и английский.** Язык сообщений определяется языком интерфейса Firefox. Для остальных языков используется английский.
+- **Локальная обработка.** Отдельный сервер-загрузчик, API-ключ и дополнительный аккаунт не нужны.
+
+### Требования
+
+Настольный Firefox **115 или новее** и доступ к нужному посту на `x.com` или `twitter.com`.
+
+### Установка
+
+#### Попробовать локально
+
+1. Распакуй архив расширения в отдельную папку.
+2. Открой в Firefox `about:debugging#/runtime/this-firefox`.
+3. Нажми **«Загрузить временное дополнение…»**.
 4. Выбери `manifest.json` из распакованной папки.
-5. Обнови вкладку X: расширению нужны новые ответы ленты после установки.
-6. Нажми иконку слева от «⋯» в посте с видео.
+5. Обнови открытые вкладки X.
 
-Временное дополнение удаляется при закрытии Firefox. Для постоянной установки в обычный Firefox нужна подпись Mozilla. Подписать можно и для личного распространения, без публикации в каталоге. Этот архив не подписан; открытие ZIP как обычного дополнения не заменяет временную установку.
+Временная установка действует до закрытия Firefox. Сохрани распакованную папку, чтобы при необходимости загрузить расширение снова.
 
-## Как работает
+#### Установить постоянно
 
-- Firefox передаёт расширению копию ответов GraphQL для известных операций ленты, поиска, профилей, закладок и отдельных постов.
-- Исходные байты сразу возвращаются странице без изменения. Сбор ответов ограничен 12 МиБ на запрос.
-- Расширение извлекает метаданные видео и выбирает MP4 с наибольшим указанным битрейтом. Это лучший из найденных MP4-вариантов, не гарантия исходного качества автора.
-- Загружается только HTTPS-файл с точного домена `video.twimg.com`.
-- Файл сохраняется как `X_<номер поста>_<номер видео>.mp4`. Место сохранения определяется настройками Firefox.
-- Если видео несколько, кнопка открывает список. Анимации X могут сохраняться как MP4.
-- Для репостов используется вложенный исходный пост; для цитаты без своего видео — видео цитируемого поста.
+Для постоянной установки в обычный Firefox нужна подпись Mozilla. ZIP-архив с исходниками не подписан.
 
-Нет внешнего сервера, Cobalt, API-ключей, аналитики и запросов пароля. Код не читает заголовки авторизации и не запрашивает доступ к cookies. Данные ответов обрабатываются локально. Кэш хранит только номера постов и ссылки/битрейты видео, максимум 600 постов на вкладку, в памяти до её закрытия или перезагрузки. Запросы личных сообщений не входят в список обрабатываемых операций.
+Чтобы подписать личную сборку, отправь ZIP через [Mozilla Add-ons Developer Hub](https://addons.mozilla.org/developers/) и выбери **On your own** — распространение вне публичного каталога. Полученный от Mozilla подписанный файл `.xpi` можно установить через менеджер дополнений Firefox.
 
-## Разрешения
+### Как пользоваться
 
-- Доступ к `x.com`, `twitter.com` и их API-доменам: кнопка в странице и чтение ответов с метаданными.
-- `webRequest` / `webRequestBlocking`: API Firefox для чтения потока ответа. Код не меняет его содержимое.
-- `downloads`: сохранение видео и отслеживание завершения.
-- `video.twimg.com`: домен видео X.
+1. Найди пост с видео.
+2. Нажми иконку скачивания слева от **⋯**.
+3. Если видео несколько, выбери нужное.
+4. Следи за загрузкой и открой сохранённый файл через панель загрузок Firefox.
 
-## Ограничения и диагностика
+Видео получают имена `X_<номер поста>_<номер медиа>.mp4`, а анимации — `X_<номер поста>_<номер медиа>.gif`. Папка сохранения и появление диалога выбора файла зависят от настроек загрузок Firefox.
 
-- Пользователь подтвердил работу скачивания версии 0.1.0 в Firefox. Для 0.1.1 прошли пять локальных тестов, включая локализацию. В среде разработки нет установленного браузера: исправление расположения и цвета на живой ленте ещё не проверено.
-- Если ссылка не найдена, открой сам пост и обнови страницу. Ответ, загруженный до установки расширения, недоступен.
-- Если X отдаёт только HLS (`.m3u8`), прямой эфир или иной формат без MP4-варианта, эта версия его не скачает.
-- Внешние видеоплееры и встроенные сторонние сайты не поддерживаются.
-- Неизвестные операции API или изменения разметки X могут потребовать обновления расширения.
-- При ошибке скачивания проверь панель загрузок Firefox. Обновление поста может дать свежую ссылку.
-- Для проверки проблемы достаточно версии Firefox, ссылки на доступный пост и текста ошибки. Пароли, cookies и токены не нужны.
+Для GIF расширение сначала получает MP4-источник анимации с серверов X и преобразует его в зацикленный GIF прямо в браузере. Во время преобразования отображается прогресс. Держи вкладку X открытой до начала скачивания: её закрытие или перезагрузка отменяет преобразование. Одновременно создаётся один GIF; скачивание обычных MP4 остаётся доступным.
 
-## Проверки для разработчика
+Расширению нужно получить метаданные видео после своего запуска. Если ссылка не найдена, открой сам пост, обнови страницу и попробуй снова.
 
-Из папки расширения: `node --test tests/core.test.cjs`.
+### Конфиденциальность и разрешения
 
-Проверяются извлечение метаданных, лучший битрейт, цитаты и репосты, фильтрация доменов, побайтовая передача ответа, повреждённый JSON, ограничение размера, привязка загрузки к вкладке и известному посту, полнота переводов и локализованные ошибки.
+Метаданные видео обрабатываются локально в браузере. Расширение не отправляет данные постов стороннему загрузчику или сервису аналитики и не запрашивает пароль, API-ключ или разрешение на чтение cookies.
 
-Для интерфейса подготовлен `tests/ui.test.cjs`: расположение кнопки, повторные изменения DOM, смена поста в существующем элементе, выбор нескольких видео и клавиатурное закрытие меню. Его запуск в среде разработки заблокирован отсутствием исполняемого файла Chromium; тест НЕ пройден. Для локального запуска нужны Node.js, пакет `playwright` и установленный для него Chromium; команда `node tests/ui.test.cjs`. Этот тест использует синтетическую страницу и не заменяет проверку расширения в Firefox.
+Номера постов, типы медиа, ссылки на видео и их битрейты временно хранятся в оперативной памяти — до 600 постов на вкладку. Кэш очищается при перезагрузке или закрытии вкладки. При создании GIF в памяти также временно хранятся исходная анимация и закодированные кадры. Запросы личных сообщений не входят в список обрабатываемых операций.
 
-## Официальная документация
+| Разрешение | Для чего нужно |
+| --- | --- |
+| Доступ к X/Twitter и их API-доменам | Добавление кнопки и чтение метаданных видео в поддерживаемых ответах постов и ленты. |
+| `webRequest` и `webRequestBlocking` | Чтение этих ответов с передачей исходного содержимого странице без изменений. |
+| `downloads` | Сохранение видео и уведомления о завершении или прерывании загрузки. |
+| Доступ к `video.twimg.com` | Доступ к серверу видео X. |
 
-- https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/webRequest/filterResponseData
-- https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/downloads/download
-- https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/
-- https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/
+### Ограничения
+
+- Поддерживаются доступные прямые MP4-варианты. Потоки только в HLS (`.m3u8`), прямые эфиры без MP4-варианта и сторонние видеоплееры не поддерживаются.
+- MP4 с наибольшим битрейтом не обязательно совпадает по качеству с оригиналом автора.
+- GIF сохраняет исходное разрешение, использует частоту 20 кадров/с, до 256 цветов на кадр и бесконечно зацикливается. Он может занимать значительно больше места, чем MP4-источник; цвета и плавность могут измениться. Создаётся новый GIF, а не восстанавливается оригинальный GIF-файл автора.
+- Локальное преобразование GIF поддерживает анимации до 120 секунд и 2 073 600 пикселей на кадр (например, 1920 × 1080). Лимит исходного файла — 50 МиБ, готового GIF — 128 МиБ, обработки — 10 минут. При ошибке или превышении лимита появится сообщение; расширение не сохраняет MP4 вместо GIF.
+- Изменения разметки или API X могут потребовать обновления расширения.
+- Интерфейс доступен на русском и английском. Настройка языка внутри X не управляет языком расширения.
+
+### Обновление и решение проблем
+
+При временной установке замени файлы в папке расширения, нажми **«Перезагрузить»** в `about:debugging` и обнови вкладки X. Для подписанной установки используй подписанную новую версию того же дополнения.
+
+Если скачивание не удалось, проверь панель загрузок Firefox и обнови пост, чтобы получить свежие метаданные. При сообщении о проблеме укажи версии Firefox и расширения, ссылку на пост, если ею можно поделиться, и текст ошибки.
+
+### Разработка
+
+Расширение написано на обычных JavaScript и CSS с использованием Firefox WebExtensions API. Сборка не требуется.
+
+Основные тесты запускаются из папки расширения:
+
+```sh
+node --test tests/core.test.cjs
+```
+
+Тесты преобразования и кодировщика:
+
+```sh
+node --test tests/converter.test.cjs tests/gif.test.cjs
+```
+
+Тесту кодировщика дополнительно нужны Python 3 и Pillow. Он независимо декодирует созданные GIF и проверяет кадры, цвета, тайминги и зацикливание. Тест преобразования имитирует браузерные API; декодирование в живом Firefox нужно проверять отдельно в браузере.
+
+Дополнительному тесту интерфейса нужны Playwright и установленный для него Chromium:
+
+```sh
+node tests/ui.test.cjs
+```
+
+Тест интерфейса работает с тестовой страницей и не заменяет проверку расширения в Firefox на X.

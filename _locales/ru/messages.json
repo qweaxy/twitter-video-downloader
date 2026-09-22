@@ -1,18 +1,83 @@
 {
-  "extensionDescription": {"message": "Минималистичная кнопка скачивания MP4 прямо в ленте X."},
-  "downloadVideo": {"message": "Скачать видео"},
-  "chooseVideo": {"message": "Выбери видео"},
+  "extensionDescription": {
+    "message": "Скачивай видео в MP4, а анимации в GIF прямо из ленты X."
+  },
+  "downloadVideo": {
+    "message": "Скачать видео"
+  },
+  "chooseVideo": {
+    "message": "Выбери видео или GIF"
+  },
   "downloadVideoNumber": {
     "message": "Скачать видео $NUMBER$",
-    "placeholders": {"number": {"content": "$1", "example": "2"}}
+    "placeholders": {
+      "number": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
   },
-  "downloadStarted": {"message": "Скачивание началось — файл появится в загрузках Firefox."},
-  "videoFailed": {"message": "Не удалось получить видео."},
-  "extensionRestarted": {"message": "Расширение перезапущено. Обнови страницу X."},
-  "reloadPage": {"message": "Обнови страницу X и попробуй снова."},
-  "videoSaved": {"message": "Видео сохранено."},
-  "downloadInterrupted": {"message": "Скачивание прервано. Проверь панель загрузок Firefox и попробуй ещё раз."},
-  "linkMissing": {"message": "Ссылка ещё не найдена. Открой пост и обнови страницу, затем попробуй снова."},
-  "variantUnavailable": {"message": "Этот вариант видео недоступен."},
-  "downloadFailed": {"message": "Firefox не смог начать скачивание. Обнови пост и попробуй снова."}
+  "downloadStarted": {
+    "message": "Скачивание началось — файл появится в загрузках Firefox."
+  },
+  "videoFailed": {
+    "message": "Не удалось получить видео."
+  },
+  "extensionRestarted": {
+    "message": "Расширение перезапущено. Обнови страницу X."
+  },
+  "reloadPage": {
+    "message": "Обнови страницу X и попробуй снова."
+  },
+  "videoSaved": {
+    "message": "Видео сохранено."
+  },
+  "downloadInterrupted": {
+    "message": "Скачивание прервано. Проверь панель загрузок Firefox и попробуй ещё раз."
+  },
+  "linkMissing": {
+    "message": "Ссылка ещё не найдена. Открой пост и обнови страницу, затем попробуй снова."
+  },
+  "variantUnavailable": {
+    "message": "Этот вариант видео недоступен."
+  },
+  "downloadFailed": {
+    "message": "Firefox не смог начать скачивание. Обнови пост и попробуй снова."
+  },
+  "downloadMedia": {
+    "message": "Скачать видео или GIF"
+  },
+  "downloadGif": {
+    "message": "Скачать GIF"
+  },
+  "downloadGifNumber": {
+    "message": "Скачать GIF $NUMBER$",
+    "placeholders": {
+      "number": {
+        "content": "$1",
+        "example": "2"
+      }
+    }
+  },
+  "gifSaved": {
+    "message": "GIF сохранён."
+  },
+  "gifConverting": {
+    "message": "Создание GIF… $PERCENT$%",
+    "placeholders": {
+      "percent": {
+        "content": "$1",
+        "example": "50"
+      }
+    }
+  },
+  "gifBusy": {
+    "message": "Другой GIF ещё создаётся. Дождись завершения и попробуй снова."
+  },
+  "gifFailed": {
+    "message": "Не удалось создать GIF. Обнови пост и попробуй снова. MP4 не сохранялся."
+  },
+  "gifTooLarge": {
+    "message": "Анимация превышает лимиты локального преобразования: 120 секунд, 2 073 600 пикселей, 50 МиБ исходного файла или 128 МиБ GIF. Файл не сохранён."
+  }
 }

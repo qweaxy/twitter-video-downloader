@@ -23,9 +23,9 @@ function env(locale = 'en') {
     }},
     tabs:{onRemoved:event('removed'),onUpdated:event('updated'),sendMessage:async (id,msg)=>{messages.push([id,msg]);}},
     runtime:{onMessage:event('message')},
-    downloads:{download:async opts=>{downloads.push(opts);return 10;},onChanged:event('downloadChanged')}
+    downloads:{download:async opts=>{downloads.push(opts);return 10;},search:async()=>[{state:'in_progress'}],onChanged:event('downloadChanged')}
   };
-  const ctx=vm.createContext({URL,TextDecoder,browser});
+  const ctx=vm.createContext({URL,TextDecoder,browser,AbortController,Blob,setTimeout,clearTimeout});
   vm.runInContext(mediaSource,ctx);vm.runInContext(bgSource,ctx);
   return {ctx,callbacks,filters,downloads,messages};
 }
@@ -53,13 +53,14 @@ test('quotes, retweets, multiple videos and GIFs stay attached to the correct po
   const got=e.ctx.XFDMedia.extract({items:[quote,retweet,own]});
   assert.equal(got.get('100')[0].url,low);assert.equal(got.get('300')[0].url,low);
   assert.equal(got.get('400')[0].url,high);assert.equal(got.get('400').length,2);
+  assert.equal(got.get('400')[0].type,'video');assert.equal(got.get('400')[1].type,'gif');
   assert.equal(e.ctx.XFDMedia.extract(tweet('999',[])).size,0);
 });
 test('stream remains byte-exact, downloads cached post, rejects cross-tab or external senders',async()=>{
   const e=env();const {f,bytes}=capture(e,{caption:'Привет 🎬',data:tweet('100',[media(high)])});
   assert.deepEqual(Buffer.concat(f.chunks),bytes);assert.equal(f.closed,true);
   const counts=await e.callbacks.message({type:'xfd:lookup',ids:['100']},sender);
-  assert.equal(counts['100'],1);
+  assert.deepEqual(Array.from(counts['100']),['video']);
   const ok=await e.callbacks.message({type:'xfd:download',id:'100'},sender);
   assert.equal(ok.ok,true);assert.equal(e.downloads[0].url,high);
   assert.equal(e.downloads[0].filename,'X_100_1.mp4');
@@ -70,7 +71,47 @@ test('stream remains byte-exact, downloads cached post, rejects cross-tab or ext
   e.callbacks.downloadChanged({id:10,state:{current:'complete'}});
   assert.equal(e.messages.at(-1)[1].ok,true);
   e.callbacks.removed(1);
-  assert.equal((await e.callbacks.message({type:'xfd:lookup',ids:['100']},sender))['100'],0);
+  assert.equal((await e.callbacks.message({type:'xfd:lookup',ids:['100']},sender))['100'].length,0);
+});
+test('GIFs use converted image/gif blobs; videos keep direct MP4; blob URLs are released',async()=>{
+  const e=env();const post=tweet('500',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';
+  capture(e,post);
+  let converted=0;
+  e.ctx.XFDGif={convert:async(url,progress,signal)=>{
+    assert.equal(url,low);assert.equal(signal.aborted,false);converted++;progress(50);
+    return new Blob(['GIF89a'],{type:'image/gif'});
+  }};
+  const result=await e.callbacks.message({type:'xfd:download',id:'500'},sender);
+  assert.equal(result.ok,true);assert.equal(converted,1);
+  assert.equal(e.downloads[0].filename,'X_500_1.gif');
+  assert.ok(e.downloads[0].url.startsWith('blob:'));
+  const response=await fetch(e.downloads[0].url);
+  assert.equal(response.headers.get('content-type'),'image/gif');assert.equal(await response.text(),'GIF89a');
+  e.callbacks.downloadChanged({id:10,state:{current:'complete'}});
+  await assert.rejects(fetch(e.downloads[0].url));
+  assert.equal(e.messages.at(-1)[1].kind,'gif');
+});
+test('failed conversion never silently downloads MP4 and does not keep the busy lock',async()=>{
+  const e=env();const post=tweet('501',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  let attempts=0;
+  e.ctx.XFDGif={convert:async()=>{attempts++;throw new Error('gifTooLarge');}};
+  for(let i=0;i<2;i++) {
+    const result=await e.callbacks.message({type:'xfd:download',id:'501'},sender);
+    assert.equal(result.ok,false);assert.match(result.error,/limits/);
+  }
+  assert.equal(attempts,2);assert.equal(e.downloads.length,0);
+});
+test('only one GIF conversion runs; closing its tab cancels it',async()=>{
+  const e=env();const post=tweet('502',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  let conversionSignal;
+  e.ctx.XFDGif={convert:async(url,progress,signal)=>new Promise((resolve,reject)=>{
+    conversionSignal=signal;signal.addEventListener('abort',()=>reject(new Error('gifFailed')),{once:true});
+  })};
+  const pending=e.callbacks.message({type:'xfd:download',id:'502'},sender);
+  const second=await e.callbacks.message({type:'xfd:download',id:'502'},sender);
+  assert.equal(second.ok,false);assert.match(second.error,/Another GIF/);
+  e.callbacks.removed(1);assert.equal(conversionSignal.aborted,true);
+  assert.equal((await pending).ok,false);assert.equal(e.downloads.length,0);
 });
 test('malformed and oversized responses leave the feed usable; DMs are ignored',()=>{
   const e=env();const {f,bytes}=capture(e,'not json');
