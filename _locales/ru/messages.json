@@ -1,0 +1,18 @@
+{
+  "extensionDescription": {"message": "Минималистичная кнопка скачивания MP4 прямо в ленте X."},
+  "downloadVideo": {"message": "Скачать видео"},
+  "chooseVideo": {"message": "Выбери видео"},
+  "downloadVideoNumber": {
+    "message": "Скачать видео $NUMBER$",
+    "placeholders": {"number": {"content": "$1", "example": "2"}}
+  },
+  "downloadStarted": {"message": "Скачивание началось — файл появится в загрузках Firefox."},
+  "videoFailed": {"message": "Не удалось получить видео."},
+  "extensionRestarted": {"message": "Расширение перезапущено. Обнови страницу X."},
+  "reloadPage": {"message": "Обнови страницу X и попробуй снова."},
+  "videoSaved": {"message": "Видео сохранено."},
+  "downloadInterrupted": {"message": "Скачивание прервано. Проверь панель загрузок Firefox и попробуй ещё раз."},
+  "linkMissing": {"message": "Ссылка ещё не найдена. Открой пост и обнови страницу, затем попробуй снова."},
+  "variantUnavailable": {"message": "Этот вариант видео недоступен."},
+  "downloadFailed": {"message": "Firefox не смог начать скачивание. Обнови пост и попробуй снова."}
+}

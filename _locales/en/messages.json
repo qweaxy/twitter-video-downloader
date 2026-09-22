@@ -1,0 +1,18 @@
+{
+  "extensionDescription": {"message": "A minimal MP4 download button right in your X feed."},
+  "downloadVideo": {"message": "Download video"},
+  "chooseVideo": {"message": "Choose a video"},
+  "downloadVideoNumber": {
+    "message": "Download video $NUMBER$",
+    "placeholders": {"number": {"content": "$1", "example": "2"}}
+  },
+  "downloadStarted": {"message": "Download started. You can find the file in Firefox downloads."},
+  "videoFailed": {"message": "Could not get the video."},
+  "extensionRestarted": {"message": "The extension restarted. Reload the X page."},
+  "reloadPage": {"message": "Reload the X page and try again."},
+  "videoSaved": {"message": "Video saved."},
+  "downloadInterrupted": {"message": "Download interrupted. Check Firefox downloads and try again."},
+  "linkMissing": {"message": "Video link not found yet. Open the post, reload the page, and try again."},
+  "variantUnavailable": {"message": "This video version is unavailable."},
+  "downloadFailed": {"message": "Firefox could not start the download. Reload the post and try again."}
+}
