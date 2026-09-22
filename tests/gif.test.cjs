@@ -9,8 +9,8 @@ const ctx=vm.createContext({});vm.runInContext(source,ctx);
 const {Encoder}=ctx.XFDGifEncoder;
 test('GIF89a round-trips through Pillow: colors, dimensions, timing, animation, dictionary resets',()=>{
   const fixtures=[];
-  for(const [width,height] of [[1,1],[17,13],[256,256]]) {
-    const encoder=new Encoder(width,height),refs=[];
+  for(const colors of [64,128,256]) for(const [width,height] of [[1,1],[17,13],[256,256]]) {
+    const encoder=new Encoder(width,height,colors),refs=[];
     let random=918273;
     for(let frame=0;frame<3;frame++) {
       const rgba=new Uint8Array(width*height*4),rgb=new Uint8Array(width*height*3);

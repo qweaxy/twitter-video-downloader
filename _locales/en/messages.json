@@ -78,6 +78,103 @@
     "message": "Could not create the GIF. Reload the post and try again. No MP4 was saved."
   },
   "gifTooLarge": {
-    "message": "This animation exceeds the local GIF conversion limits (120 seconds, 2,073,600 pixels, 50 MiB source or 128 MiB GIF). No file was saved."
+    "message": "GIF conversion limits exceeded: 120 seconds, 2,073,600 output pixels, 50 MiB source or 128 MiB GIF. Try a lower resolution, frame rate or color count in settings."
+  },
+  "settingsTitle": {
+    "message": "Settings"
+  },
+  "settingsSubtitle": {
+    "message": "Tune GIF size and quality for your next download."
+  },
+  "gifSettings": {
+    "message": "GIF conversion"
+  },
+  "gifScaleLabel": {
+    "message": "Resolution"
+  },
+  "scalePresets": {
+    "message": "Resolution presets"
+  },
+  "scaleHelp": {
+    "message": "Percentage of the original width and height. 50% means one quarter of the pixels."
+  },
+  "scaleExample": {
+    "message": "Example: 1280 × 720 → $WIDTH$ × $HEIGHT$ · $PIXELS$% of the pixels. File size depends on the content.",
+    "placeholders": {
+      "width": {
+        "content": "$1"
+      },
+      "height": {
+        "content": "$2"
+      },
+      "pixels": {
+        "content": "$3"
+      }
+    }
+  },
+  "fpsLabel": {
+    "message": "Frame rate"
+  },
+  "fpsValue": {
+    "message": "$VALUE$ fps",
+    "placeholders": {
+      "value": {
+        "content": "$1"
+      }
+    }
+  },
+  "fpsHelp": {
+    "message": "Fewer frames make a smaller file. More frames keep motion smoother."
+  },
+  "colorsLabel": {
+    "message": "Colors per frame"
+  },
+  "colorsHelp": {
+    "message": "A smaller palette can reduce file size but may show color banding."
+  },
+  "gifOnlyNote": {
+    "message": "These settings apply to GIFs. Videos keep their original MP4 quality."
+  },
+  "downloadSettings": {
+    "message": "Saving files"
+  },
+  "saveLocationLabel": {
+    "message": "Where to save"
+  },
+  "locationBrowser": {
+    "message": "Follow Firefox settings"
+  },
+  "locationAsk": {
+    "message": "Ask every time"
+  },
+  "locationDownloads": {
+    "message": "Use the default downloads folder"
+  },
+  "locationHelp": {
+    "message": "Applies to both videos and GIFs."
+  },
+  "saveSettings": {
+    "message": "Save settings"
+  },
+  "resetSettings": {
+    "message": "Reset to defaults"
+  },
+  "settingsFooter": {
+    "message": "Settings stay in this Firefox profile. Saved changes apply to the next download."
+  },
+  "settingsUnsaved": {
+    "message": "Unsaved changes."
+  },
+  "settingsSaved": {
+    "message": "Saved. The next download will use these settings."
+  },
+  "settingsResetPending": {
+    "message": "Defaults restored in the form. Click Save settings to apply."
+  },
+  "settingsLoadFailed": {
+    "message": "Could not read saved settings. Please try again."
+  },
+  "settingsSaveFailed": {
+    "message": "Could not save settings. Your changes have not been applied."
   }
 }

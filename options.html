@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>X Feed Download — Settings</title>
+  <link rel="stylesheet" href="options.css">
+  <script defer src="settings.js"></script>
+  <script defer src="options.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="brand"><img src="icon.svg" alt="" width="24" height="24"><span>X Feed Download</span></div>
+      <h1 data-i18n="settingsTitle">Settings</h1>
+      <p class="subtitle" data-i18n="settingsSubtitle">Tune GIF size and quality for your next download.</p>
+    </header>
+    <form id="settings-form">
+      <fieldset id="controls" disabled>
+        <section class="card" aria-labelledby="gif-title">
+          <div class="section-heading"><h2 id="gif-title" data-i18n="gifSettings">GIF conversion</h2><span class="badge">GIF</span></div>
+          <div class="field">
+            <label for="gifScale" data-i18n="gifScaleLabel">Resolution</label>
+            <div class="scale-row">
+              <input id="scaleRange" type="range" min="10" max="100" step="1" value="100" aria-labelledby="scale-label">
+              <div class="number-wrap"><input id="gifScale" type="number" min="10" max="100" step="1" value="100" required aria-describedby="scaleHelp scaleExample"><span>%</span></div>
+            </div>
+            <span id="scale-label" class="sr-only" data-i18n="gifScaleLabel">Resolution</span>
+            <div class="presets" role="group" data-i18n-aria="scalePresets">
+              <button type="button" data-scale="25" aria-pressed="false">25%</button>
+              <button type="button" data-scale="50" aria-pressed="false">50%</button>
+              <button type="button" data-scale="75" aria-pressed="false">75%</button>
+              <button type="button" data-scale="100" aria-pressed="true">100%</button>
+            </div>
+            <p id="scaleHelp" class="help" data-i18n="scaleHelp">Percentage of the original width and height. 50% means one quarter of the pixels.</p>
+            <div class="example" id="scaleExample" aria-live="polite"></div>
+          </div>
+          <div class="two-columns">
+            <div class="field">
+              <label for="gifFps" data-i18n="fpsLabel">Frame rate</label>
+              <select id="gifFps" aria-describedby="fpsHelp"><option value="5">5 fps</option><option value="10">10 fps</option><option value="15">15 fps</option><option value="20" selected>20 fps</option><option value="25">25 fps</option><option value="30">30 fps</option></select>
+              <p class="help" id="fpsHelp" data-i18n="fpsHelp">Fewer frames make a smaller file. More frames keep motion smoother.</p>
+            </div>
+            <div class="field">
+              <label for="gifColors" data-i18n="colorsLabel">Colors per frame</label>
+              <select id="gifColors" aria-describedby="colorsHelp"><option value="64">64</option><option value="128">128</option><option value="256" selected>256</option></select>
+              <p class="help" id="colorsHelp" data-i18n="colorsHelp">A smaller palette can reduce file size but may show color banding.</p>
+            </div>
+          </div>
+          <p class="footnote" data-i18n="gifOnlyNote">These settings apply to GIFs. Videos keep their original MP4 quality.</p>
+        </section>
+        <section class="card" aria-labelledby="downloads-title">
+          <h2 id="downloads-title" data-i18n="downloadSettings">Saving files</h2>
+          <div class="field">
+            <label for="saveLocation" data-i18n="saveLocationLabel">Where to save</label>
+            <select id="saveLocation"><option value="browser" data-i18n="locationBrowser">Follow Firefox settings</option><option value="ask" data-i18n="locationAsk">Ask every time</option><option value="downloads" data-i18n="locationDownloads">Use the default downloads folder</option></select>
+            <p class="help" data-i18n="locationHelp">Applies to both videos and GIFs.</p>
+          </div>
+        </section>
+        <div class="actions"><button type="submit" class="primary" data-i18n="saveSettings">Save settings</button><button type="button" id="reset" data-i18n="resetSettings">Reset to defaults</button></div>
+      </fieldset>
+      <p id="status" role="status" aria-live="polite"></p>
+    </form>
+    <footer data-i18n="settingsFooter">Settings stay in this Firefox profile. Saved changes apply to the next download.</footer>
+  </main>
+</body>
+</html>

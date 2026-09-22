@@ -23,6 +23,7 @@ The button follows X’s visual style: a muted icon with a blue hover state. Dow
 - **Reposts and quotes.** Supports video metadata in reposts and quoted posts. If a quote has its own video, that video takes priority.
 - **Real GIF files.** Media marked as an animation by X is converted locally into an animated `.gif`. Ordinary videos remain `.mp4`.
 - **English and Russian.** Messages follow the Firefox interface language, with English as the fallback for other languages.
+- **GIF size controls.** Set resolution as a percentage of the source, choose a frame rate and palette size, and control where downloads are saved.
 - **Local processing.** No separate downloader server, API key, or additional account is required.
 
 ### Requirements
@@ -60,6 +61,23 @@ For GIFs, the extension first retrieves X’s MP4 animation source and converts 
 
 The extension needs to receive the post’s video metadata after it loads. If a link is not found, open the post itself, reload the page, and try again.
 
+### Settings
+
+Click **X Feed Download** in Firefox’s extensions menu or on the toolbar to open settings. You can also open the extension’s preferences in `about:addons`.
+
+| Setting | Choices | Default |
+| --- | --- | --- |
+| GIF resolution | 10–100% of the source width and height; shortcuts for 25%, 50%, 75%, 100% | 100% |
+| GIF frame rate | 5, 10, 15, 20, 25 or 30 fps | 20 fps |
+| GIF colors per frame | 64, 128 or 256 | 256 |
+| Saving files | Follow Firefox settings, ask every time, or use the default downloads folder | Follow Firefox settings |
+
+At **50%**, a 1280 × 720 animation becomes **640 × 360**: half the width and height, one quarter of the pixels. The settings page shows an example as you change the percentage. Actual file-size savings depend on the animation, frame rate and palette.
+
+For a smaller GIF, try **50%, 15 fps, 128 colors**. Lower frame rates reduce smoothness; fewer colors can make gradients less smooth. Video downloads remain at their selected MP4 quality.
+
+Click **Save settings** to apply your choices. They are kept locally in your Firefox profile and used for the next download. A conversion already in progress keeps the settings it started with. **Reset to defaults** restores values in the form; save to apply them. Uninstalling the extension can remove its stored settings.
+
 ### Privacy and permissions
 
 Video metadata is processed locally in your browser. The extension does not send post data to an external downloader or analytics service, and it does not request your password, an API key, or permission to read cookies.
@@ -71,14 +89,15 @@ It temporarily keeps post IDs, media types, and video URLs/bitrates in memory, w
 | Access to X/Twitter and their API domains | Add the button and read video metadata in supported post and timeline responses. |
 | `webRequest` and `webRequestBlocking` | Read those responses while passing their original contents through to the page. |
 | `downloads` | Save video files and report completion or interruption. |
+| `storage` | Keep your download preferences in this Firefox profile. |
 | Access to `video.twimg.com` | Access X’s video host. |
 
 ### Limitations
 
 - Only available direct MP4 variants are supported. HLS-only streams (`.m3u8`), live streams without an MP4 variant, and third-party video players are not supported.
 - The highest-bitrate MP4 is not necessarily the creator’s original upload quality.
-- GIFs retain the source dimensions, use 20 frames per second and up to 256 colors per frame, and loop indefinitely. They may be much larger than their MP4 source; conversion can change colors and smoothness. This produces a new GIF, not the original uploaded GIF file.
-- Local GIF conversion supports animations up to 120 seconds and 2,073,600 pixels per frame (for example, 1920 × 1080). The source is limited to 50 MiB, the encoded GIF to 128 MiB, and processing to 10 minutes. If conversion fails or a limit is exceeded, an error is shown; the extension does not save an MP4 instead.
+- GIFs loop indefinitely and use your selected resolution, frame rate and palette. Defaults are 100%, 20 fps and 256 colors. They may be much larger than their MP4 source; conversion can change colors and smoothness. This produces a new GIF, not the original uploaded GIF file.
+- Local GIF conversion supports animations up to 120 seconds and 2,073,600 output pixels per frame (for example, 1920 × 1080). Reducing the resolution can bring a larger source within the output limit. The source is limited to 50 MiB, the encoded GIF to 128 MiB, and processing to 10 minutes. If conversion fails or a limit is exceeded, an error is shown; the extension does not save an MP4 instead.
 - Changes to X’s page layout or API may require an extension update.
 - English and Russian are the supported interface languages. The language setting inside X does not control the extension’s language.
 
@@ -95,7 +114,7 @@ The extension uses plain JavaScript, CSS, and Firefox WebExtensions APIs. No bui
 Run the core tests from the extension folder:
 
 ```sh
-node --test tests/core.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs
 ```
 
 Conversion and encoder tests:
@@ -130,6 +149,7 @@ X Feed Download добавляет небольшую иконку скачив�
 - **Репосты и цитаты.** Поддерживаются метаданные видео из репостов и цитируемых постов. Если у цитаты есть собственное видео, приоритет отдаётся ему.
 - **Настоящие GIF-файлы.** Медиа, отмеченные X как анимации, локально преобразуются в анимированный `.gif`. Обычные видео сохраняются в `.mp4`.
 - **Русский и английский.** Язык сообщений определяется языком интерфейса Firefox. Для остальных языков используется английский.
+- **Настройка размера GIF.** Выбирай разрешение в процентах от исходного, частоту кадров, размер палитры и способ сохранения файлов.
 - **Локальная обработка.** Отдельный сервер-загрузчик, API-ключ и дополнительный аккаунт не нужны.
 
 ### Требования
@@ -167,6 +187,23 @@ X Feed Download добавляет небольшую иконку скачив�
 
 Расширению нужно получить метаданные видео после своего запуска. Если ссылка не найдена, открой сам пост, обнови страницу и попробуй снова.
 
+### Настройки
+
+Нажми **X Feed Download** в меню расширений Firefox или на панели инструментов, чтобы открыть настройки. Они также доступны в параметрах дополнения на странице `about:addons`.
+
+| Настройка | Варианты | По умолчанию |
+| --- | --- | --- |
+| Разрешение GIF | 10–100% исходной ширины и высоты; быстрые кнопки 25%, 50%, 75%, 100% | 100% |
+| Частота кадров GIF | 5, 10, 15, 20, 25 или 30 кадров/с | 20 кадров/с |
+| Цветов на кадр GIF | 64, 128 или 256 | 256 |
+| Сохранение файлов | По настройкам Firefox, спрашивать каждый раз или использовать папку загрузок по умолчанию | По настройкам Firefox |
+
+При **50%** анимация 1280 × 720 превращается в **640 × 360**: ширина и высота вдвое меньше, пикселей — вчетверо меньше. На странице настроек есть пример, который меняется вместе с процентом. Насколько уменьшится вес файла, зависит от содержимого анимации, частоты кадров и палитры.
+
+Для небольшого GIF попробуй **50%, 15 кадров/с, 128 цветов**. Уменьшение частоты кадров снижает плавность движения, а небольшая палитра может сделать переходы цветов грубее. Качество скачиваемых MP4 не меняется.
+
+Нажми **«Сохранить настройки»**, чтобы применить выбор. Настройки хранятся локально в профиле Firefox и используются при следующем скачивании. Уже запущенное преобразование продолжит работу с прежними параметрами. **«Вернуть исходные»** восстанавливает значения в форме — для применения нужно сохранить их. При удалении расширения его настройки могут быть удалены.
+
 ### Конфиденциальность и разрешения
 
 Метаданные видео обрабатываются локально в браузере. Расширение не отправляет данные постов стороннему загрузчику или сервису аналитики и не запрашивает пароль, API-ключ или разрешение на чтение cookies.
@@ -178,14 +215,15 @@ X Feed Download добавляет небольшую иконку скачив�
 | Доступ к X/Twitter и их API-доменам | Добавление кнопки и чтение метаданных видео в поддерживаемых ответах постов и ленты. |
 | `webRequest` и `webRequestBlocking` | Чтение этих ответов с передачей исходного содержимого странице без изменений. |
 | `downloads` | Сохранение видео и уведомления о завершении или прерывании загрузки. |
+| `storage` | Хранение настроек скачивания в этом профиле Firefox. |
 | Доступ к `video.twimg.com` | Доступ к серверу видео X. |
 
 ### Ограничения
 
 - Поддерживаются доступные прямые MP4-варианты. Потоки только в HLS (`.m3u8`), прямые эфиры без MP4-варианта и сторонние видеоплееры не поддерживаются.
 - MP4 с наибольшим битрейтом не обязательно совпадает по качеству с оригиналом автора.
-- GIF сохраняет исходное разрешение, использует частоту 20 кадров/с, до 256 цветов на кадр и бесконечно зацикливается. Он может занимать значительно больше места, чем MP4-источник; цвета и плавность могут измениться. Создаётся новый GIF, а не восстанавливается оригинальный GIF-файл автора.
-- Локальное преобразование GIF поддерживает анимации до 120 секунд и 2 073 600 пикселей на кадр (например, 1920 × 1080). Лимит исходного файла — 50 МиБ, готового GIF — 128 МиБ, обработки — 10 минут. При ошибке или превышении лимита появится сообщение; расширение не сохраняет MP4 вместо GIF.
+- GIF бесконечно зацикливается и использует выбранные разрешение, частоту кадров и палитру. По умолчанию: 100%, 20 кадров/с и 256 цветов. Он может занимать значительно больше места, чем MP4-источник; цвета и плавность могут измениться. Создаётся новый GIF, а не восстанавливается оригинальный GIF-файл автора.
+- Локальное преобразование GIF поддерживает анимации до 120 секунд и 2 073 600 пикселей на выходной кадр (например, 1920 × 1080). Уменьшение разрешения позволяет обработать исходник, превышающий этот лимит. Лимит исходного файла — 50 МиБ, готового GIF — 128 МиБ, обработки — 10 минут. При ошибке или превышении лимита появится сообщение; расширение не сохраняет MP4 вместо GIF.
 - Изменения разметки или API X могут потребовать обновления расширения.
 - Интерфейс доступен на русском и английском. Настройка языка внутри X не управляет языком расширения.
 
@@ -202,7 +240,7 @@ X Feed Download добавляет небольшую иконку скачив�
 Основные тесты запускаются из папки расширения:
 
 ```sh
-node --test tests/core.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs
 ```
 
 Тесты преобразования и кодировщика:

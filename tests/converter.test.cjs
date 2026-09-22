@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 
 function environment({duration=.15,size=4*4,fail=false}={}) {
-  const seeks=[],revoked=[],progress=[],workers=[],blobs=new Map();
+  const seeks=[],revoked=[],progress=[],workers=[],draws=[],blobs=new Map();
   let frame=0;
   const video=new EventTarget();
   Object.assign(video,{duration,videoWidth:4,videoHeight:size/4,muted:false,preload:'',playsInline:false,
@@ -31,12 +31,13 @@ function environment({duration=.15,size=4*4,fail=false}={}) {
     Worker,Blob,setTimeout,clearTimeout,
     URL:{createObjectURL(blob){const url='blob:'+blobs.size;blobs.set(url,blob);return url;},revokeObjectURL(url){revoked.push(url);}},
     fetch:async()=>{if(fail)throw new Error('fetch failed');return new Response(new Uint8Array(8));},
-    document:{createElement:name=>name==='video'?video:{getContext:()=>({drawImage(){},getImageData(){
-      const data=new Uint8ClampedArray(size*4);for(let i=0;i<size;i++)data.set([frame*40,80,120,255],i*4);return {data};
+    document:{createElement:name=>name==='video'?video:{getContext:()=>({drawImage(video,x,y,w,h){draws.push([w,h]);},getImageData(x,y,w,h){
+      const data=new Uint8ClampedArray(w*h*4);for(let i=0;i<w*h;i++)data.set([frame*40,80,120,255],i*4);return {data};
     }})}}
   });
+  vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'gif-converter.js'),'utf8'),context);
-  return {convert:context.XFDGif.convert,seeks,revoked,progress,workers};
+  return {convert:context.XFDGif.convert,seeks,revoked,progress,workers,draws};
 }
 
 test('converter seeks the full animation, uses real encoder worker and releases resources',async()=>{
@@ -46,6 +47,15 @@ test('converter seeks the full animation, uses real encoder worker and releases 
   assert.equal(Buffer.from(bytes.subarray(0,6)).toString(),'GIF89a');
   assert.deepEqual(e.seeks,[.05,.1]);assert.equal(e.progress.at(-1),100);
   assert.equal(e.workers[0].terminated,true);assert.deepEqual(e.revoked,['blob:0']);
+});
+test('50% scales both dimensions before encoding; fps and palette settings reach output',async()=>{
+  const e=environment({duration:.2});
+  const blob=await e.convert('https://video.twimg.com/a.mp4',()=>{},new AbortController().signal,{gifScale:50,gifFps:10,gifColors:64});
+  const bytes=Buffer.from(await blob.arrayBuffer());
+  assert.equal(bytes.readUInt16LE(6),2);assert.equal(bytes.readUInt16LE(8),2);
+  assert.deepEqual(e.draws,[[2,2],[2,2]]);assert.deepEqual(e.seeks,[.1]);
+  // Fixed header (13) + loop extension (19) + graphic control (8) + image descriptor.
+  assert.equal(bytes[49]&7,5); // 2^(5+1) = 64 palette entries.
 });
 test('duration limit rejects without producing a partial GIF; source blob is released',async()=>{
   const e=environment({duration:121});

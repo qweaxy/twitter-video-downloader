@@ -12,22 +12,25 @@ function tweet(id, variants) {
 }
 const low='https://video.twimg.com/ext_tw_video/1/pu/vid/320x180/low.mp4';
 const high='https://video.twimg.com/ext_tw_video/1/pu/vid/1280x720/high.mp4?tag=12';
-function env(locale = 'en') {
+function env(locale = 'en', preferences) {
   const callbacks={}, filters=[], downloads=[], messages=[];
   const event=name=>({addListener:fn=>{callbacks[name]=fn;}});
   const browser={
+    storage:{local:{get:async()=>({settings:preferences}),set:async value=>{preferences=value.settings;}}},
+    browserAction:{onClicked:event('action')},
     i18n:{getMessage:key=>JSON.parse(fs.readFileSync(path.join(root,'_locales',locale,'messages.json'),'utf8'))[key]?.message || ''},
     webRequest:{onBeforeRequest:event('request'),filterResponseData:()=>{
       const f={chunks:[],write(data){this.chunks.push(Buffer.from(data));},close(){this.closed=true;},disconnect(){this.disconnected=true;}};
       filters.push(f);return f;
     }},
     tabs:{onRemoved:event('removed'),onUpdated:event('updated'),sendMessage:async (id,msg)=>{messages.push([id,msg]);}},
-    runtime:{onMessage:event('message')},
+    runtime:{onMessage:event('message'),openOptionsPage:async()=>{messages.push(['options']);}},
     downloads:{download:async opts=>{downloads.push(opts);return 10;},search:async()=>[{state:'in_progress'}],onChanged:event('downloadChanged')}
   };
   const ctx=vm.createContext({URL,TextDecoder,browser,AbortController,Blob,setTimeout,clearTimeout});
+  vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),ctx);
   vm.runInContext(mediaSource,ctx);vm.runInContext(bgSource,ctx);
-  return {ctx,callbacks,filters,downloads,messages};
+  return {ctx,callbacks,filters,downloads,messages,browser};
 }
 function capture(e, value, tabId=1) {
   e.callbacks.request({url:'https://x.com/i/api/graphql/hash/HomeTimeline',tabId,requestId:'1'});
@@ -138,4 +141,22 @@ test('both locales cover every message; background errors use the selected catal
   const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'));
   assert.equal(manifest.default_locale,'en');
   assert.equal(manifest.description,'__MSG_extensionDescription__');
+});
+test('saved scale/fps/colors reach GIF conversion and saving preference reaches downloads',async()=>{
+  const e=env('en',{gifScale:50,gifFps:10,gifColors:128,saveLocation:'ask'});
+  const post=tweet('600',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  let used;
+  e.ctx.XFDGif={convert:async(url,progress,signal,settings)=>{used=settings;return new Blob(['GIF89a'],{type:'image/gif'});}};
+  assert.equal((await e.callbacks.message({type:'xfd:download',id:'600'},sender)).ok,true);
+  assert.equal(used.gifScale,50);assert.equal(used.gifFps,10);assert.equal(used.gifColors,128);
+  assert.equal(e.downloads[0].saveAs,true);
+  e.callbacks.downloadChanged({id:10,state:{current:'complete'}});
+  await e.browser.storage.local.set({settings:{saveLocation:'downloads'}});
+  capture(e,tweet('601',[media(high)]));
+  await e.callbacks.message({type:'xfd:download',id:'601'},sender);
+  assert.equal(e.downloads[1].url,high);assert.equal(e.downloads[1].saveAs,false);
+  await e.browser.storage.local.set({settings:{saveLocation:'browser'}});
+  await e.callbacks.message({type:'xfd:download',id:'601'},sender);
+  assert.equal(Object.hasOwn(e.downloads[2],'saveAs'),false);
+  e.callbacks.action();assert.deepEqual(e.messages.at(-1),['options']);
 });

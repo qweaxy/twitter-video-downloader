@@ -5,6 +5,7 @@ const activeDownloads = new Map();
 let gifJob = null;
 const MAX_RESPONSE = 12 * 1024 * 1024;
 const MAX_POSTS = 600;
+browser.browserAction.onClicked.addListener(() => { browser.runtime.openOptionsPage().catch(() => {}); });
 
 function remember(tabId, json) {
   const found = XFDMedia.extract(json);
@@ -78,6 +79,9 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   const item = media[index];
   if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
   let objectURL = null, conversion = null, timeout = null;
+  let settings;
+  try { settings = await XFDSettings.load(); }
+  catch { return {ok:false,error:t("settingsLoadFailed")}; }
   try {
     if (item.type === "gif") {
       if (gifJob) return {ok:false,error:t("gifBusy")};
@@ -92,13 +96,14 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
         browser.tabs.sendMessage(sender.tab.id,{type:"xfd:converting",id:message.id,percent:step}).catch(() => {});
       };
       progress(0);
-      const blob = await XFDGif.convert(item.url,progress,conversion.controller.signal);
+      const blob = await XFDGif.convert(item.url,progress,conversion.controller.signal,settings);
       if (conversion.controller.signal.aborted) throw new Error("gifFailed");
       objectURL = URL.createObjectURL(blob);
     }
     const id = await browser.downloads.download({
       url: objectURL || item.url, filename: `X_${message.id}_${index + 1}.${item.type === "gif" ? "gif" : "mp4"}`,
-      conflictAction: "uniquify", incognito: !!sender.tab.incognito
+      conflictAction: "uniquify", incognito: !!sender.tab.incognito,
+      ...(settings.saveLocation === "browser" ? {} : {saveAs:settings.saveLocation === "ask"})
     });
     activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id, objectURL, kind:item.type});
     objectURL = null; // Owned by the download until completion/interruption.

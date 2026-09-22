@@ -22,7 +22,7 @@
   }
 
   // Weighted median-cut over a 15-bit histogram; a fresh local palette per frame.
-  function quantize(rgba) {
+  function quantize(rgba,colors) {
     const counts = new Uint32Array(32768);
     const red = new Float64Array(32768), green = new Float64Array(32768), blue = new Float64Array(32768);
     const keys = [];
@@ -43,7 +43,7 @@
       return {keys,weight,channel,score:keys.length > 1 ? ranges[channel] * Math.sqrt(weight) : -1};
     }
     const boxes = [box(keys)];
-    while (boxes.length < 256) {
+    while (boxes.length < colors) {
       let index = 0;
       for (let i = 1; i < boxes.length; i++) if (boxes[i].score > boxes[index].score) index = i;
       const current = boxes[index];
@@ -55,7 +55,7 @@
       boxes[index] = box(current.keys.slice(0,split));
       boxes.push(box(current.keys.slice(split)));
     }
-    const palette = new Uint8Array(768), mapping = new Uint8Array(32768);
+    const palette = new Uint8Array(colors * 3), mapping = new Uint8Array(32768);
     boxes.forEach((entry,index) => {
       let r = 0, g = 0, b = 0;
       for (const key of entry.keys) { mapping[key] = index; r += red[key]; g += green[key]; b += blue[key]; }
@@ -71,10 +71,11 @@
     return {palette,indexed};
   }
 
-  function lzw(out, pixels) {
-    out.byte(8); // GIF minimum code size, 256-color palette.
+  function lzw(out, pixels, minimumBits) {
+    out.byte(minimumBits);
+    const clear = 1 << minimumBits, end = clear + 1, first = clear + 2;
     const block = new Uint8Array(255); let used = 0, bits = 0, bitCount = 0;
-    let width = 9, decoderNext = 258, previous = false;
+    let width = minimumBits + 1, decoderNext = first, previous = false;
     function packedByte(value) {
       block[used++] = value;
       if (used === 255) { out.byte(used); out.array(block); used = 0; }
@@ -83,8 +84,8 @@
       bits |= value << bitCount; bitCount += width;
       while (bitCount >= 8) { packedByte(bits & 255); bits >>>= 8; bitCount -= 8; }
       // Track decoder growth so width transitions also work before the end code.
-      if (value === 256) { width = 9; decoderNext = 258; previous = false; }
-      else if (value !== 257) {
+      if (value === clear) { width = minimumBits + 1; decoderNext = first; previous = false; }
+      else if (value !== end) {
         if (previous && decoderNext < 4096) {
           decoderNext++;
           if (decoderNext === (1 << width) && width < 12) width++;
@@ -92,28 +93,30 @@
         previous = true;
       }
     }
-    code(256);
-    let table = new Map(), next = 258, prefix = pixels[0];
+    code(clear);
+    let table = new Map(), next = first, prefix = pixels[0];
     for (let i = 1; i < pixels.length; i++) {
       const value = pixels[i], key = prefix * 256 + value;
       const existing = table.get(key);
       if (existing !== undefined) { prefix = existing; continue; }
       code(prefix);
       if (next < 4096) table.set(key,next++);
-      else { code(256); table.clear(); next = 258; }
+      else { code(clear); table.clear(); next = first; }
       prefix = value;
     }
-    code(prefix); code(257);
+    code(prefix); code(end);
     if (bitCount) packedByte(bits & 255);
     if (used) { out.byte(used); out.array(block.subarray(0,used)); }
     out.byte(0);
   }
 
   class Encoder {
-    constructor(width,height) {
+    constructor(width,height,colors = 256) {
       if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 ||
           width > 65535 || height > 65535 || width * height > 2073600) throw new Error("gifTooLarge");
       this.width = width; this.height = height; this.frames = 0; this.done = false;
+      if (![64,128,256].includes(colors)) throw new Error("gifFailed");
+      this.colors = colors;
       this.out = new Bytes();
       const out = this.out;
       out.text("GIF89a"); out.word(width); out.word(height); out.array([0x70,0,0]);
@@ -121,10 +124,10 @@
     }
     frame(rgba,delayMs) {
       if (this.done || rgba.length !== this.width * this.height * 4) throw new Error("gifFailed");
-      const {palette,indexed} = quantize(rgba), out = this.out;
+      const {palette,indexed} = quantize(rgba,this.colors), out = this.out;
       out.array([0x21,0xf9,4,4]); out.word(Math.max(2,Math.min(65535,Math.round(delayMs / 10)))); out.array([0,0]);
-      out.byte(0x2c); out.word(0); out.word(0); out.word(this.width); out.word(this.height); out.byte(0x87);
-      out.array(palette); lzw(out,indexed); this.frames++;
+      out.byte(0x2c); out.word(0); out.word(0); out.word(this.width); out.word(this.height); out.byte(0x80 | (Math.log2(this.colors) - 1));
+      out.array(palette); lzw(out,indexed,Math.log2(this.colors)); this.frames++;
     }
     finish() {
       if (this.done || !this.frames) throw new Error("gifFailed");
