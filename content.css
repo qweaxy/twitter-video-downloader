@@ -1,9 +1,10 @@
-.xfd-controls { flex-direction: row !important; align-items: center !important; }
+.xfd-anchor { position: relative !important; }
 .xfd-button {
-  all: unset; box-sizing: border-box; display: inline-flex; flex: 0 0 32px;
+  all: unset; box-sizing: border-box; display: inline-flex; position: absolute;
+  transform: translateY(-50%);
   align-items: center; justify-content: center; width: 32px; height: 32px;
   border-radius: 999px; color: inherit; cursor: pointer;
-  transition: color 120ms, background-color 120ms;
+  transition: background-color 120ms;
 }
 .xfd-button svg { width: 18px; height: 18px; pointer-events: none; }
 .xfd-button:hover { color: #1d9bf0 !important; background: rgba(29,155,240,.1); }

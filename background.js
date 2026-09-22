@@ -1,4 +1,5 @@
 "use strict";
+const t = key => browser.i18n.getMessage(key);
 const tabMedia = new Map();
 const activeDownloads = new Map();
 const MAX_RESPONSE = 12 * 1024 * 1024;
@@ -67,10 +68,10 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   }
   if (message?.type !== "xfd:download" || !/^\d+$/.test(message.id)) return;
   const media = cache?.get(message.id);
-  if (!media?.length) return {ok: false, error: "Ссылка ещё не найдена. Открой пост и обнови страницу, затем попробуй снова."};
+  if (!media?.length) return {ok: false, error: t("linkMissing")};
   const index = Number.isInteger(message.index) ? message.index : 0;
   const item = media[index];
-  if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: "Этот вариант видео недоступен."};
+  if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
   try {
     const id = await browser.downloads.download({
       url: item.url, filename: `X_${message.id}_${index + 1}.mp4`,
@@ -79,7 +80,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id});
     return {ok: true};
   } catch {
-    return {ok: false, error: "Firefox не смог начать скачивание. Обнови пост и попробуй снова."};
+    return {ok: false, error: t("downloadFailed")};
   }
 });
 

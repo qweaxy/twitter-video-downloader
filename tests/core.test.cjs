@@ -12,10 +12,11 @@ function tweet(id, variants) {
 }
 const low='https://video.twimg.com/ext_tw_video/1/pu/vid/320x180/low.mp4';
 const high='https://video.twimg.com/ext_tw_video/1/pu/vid/1280x720/high.mp4?tag=12';
-function env() {
+function env(locale = 'en') {
   const callbacks={}, filters=[], downloads=[], messages=[];
   const event=name=>({addListener:fn=>{callbacks[name]=fn;}});
   const browser={
+    i18n:{getMessage:key=>JSON.parse(fs.readFileSync(path.join(root,'_locales',locale,'messages.json'),'utf8'))[key]?.message || ''},
     webRequest:{onBeforeRequest:event('request'),filterResponseData:()=>{
       const f={chunks:[],write(data){this.chunks.push(Buffer.from(data));},close(){this.closed=true;},disconnect(){this.disconnected=true;}};
       filters.push(f);return f;
@@ -80,4 +81,20 @@ test('malformed and oversized responses leave the feed usable; DMs are ignored',
   e.callbacks.request({url:'https://x.com/i/api/graphql/hash/TweetDetail',tabId:1,requestId:'3'});
   const big=e.filters.at(-1);big.ondata({data:new ArrayBuffer(12*1024*1024+1)});
   assert.equal(big.disconnected,true);assert.equal(big.chunks[0].length,12*1024*1024+1);
+});
+test('both locales cover every message; background errors use the selected catalog',async()=>{
+  const en=JSON.parse(fs.readFileSync(path.join(root,'_locales/en/messages.json'),'utf8'));
+  const ru=JSON.parse(fs.readFileSync(path.join(root,'_locales/ru/messages.json'),'utf8'));
+  assert.deepEqual(Object.keys(en).sort(),Object.keys(ru).sort());
+  const source=bgSource+fs.readFileSync(path.join(root,'content.js'),'utf8');
+  for(const match of source.matchAll(/\bt\("([A-Za-z]+)"/g)) assert.ok(en[match[1]]?.message,match[1]);
+  for(const locale of ['en','ru']) {
+    const e=env(locale);
+    const reply=await e.callbacks.message({type:'xfd:download',id:'404'},sender);
+    assert.equal(reply.error,(locale==='en'?en:ru).linkMissing.message);
+    assert.ok((locale==='en'?en:ru).downloadVideoNumber.placeholders.number.content==='$1');
+  }
+  const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8'));
+  assert.equal(manifest.default_locale,'en');
+  assert.equal(manifest.description,'__MSG_extensionDescription__');
 });

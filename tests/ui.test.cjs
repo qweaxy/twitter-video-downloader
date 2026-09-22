@@ -13,13 +13,17 @@ const root = path.join(__dirname, '..');
       article{width:566px;padding:18px 22px;border:1px solid #2f3336;margin:20px auto}
       header{display:flex;align-items:center;gap:9px} a{color:#71767b;text-decoration:none}
       .spacer{flex:1}.controls{display:flex;flex-direction:column;color:#71767b}
-      [data-testid=caret]{border:0;background:transparent;color:inherit;width:32px;height:32px;font-size:22px}
+      [data-testid=caret]{border:0;padding:0;background:transparent;color:#e7e9ea;width:20px;height:20px}
+      [data-testid=caret] svg{width:18px;height:18px;color:#71767b}
       [data-testid=videoPlayer]{height:285px;border-radius:16px;border:1px solid #2f3336;background:#101820;display:grid;place-items:center;margin-top:18px}
       .play{font-size:44px;color:#e7e9ea}p{margin:8px 0}
-    </style><article data-testid="tweet"><header><b>demo</b><a href="https://x.com/demo/status/100"><time>15 ч</time></a><span class="spacer"></span><div class="controls"><button data-testid="caret">⋯</button></div></header><p>Проверка кнопки скачивания</p><div data-testid="videoPlayer"><span class="play">▷</span></div></article>`);
+    </style><article data-testid="tweet"><header><b>demo</b><a href="https://x.com/demo/status/100"><time>15 ч</time></a><span class="spacer"></span><div class="controls"><button data-testid="caret"><svg viewBox="0 0 24 24"><circle fill="currentColor" cx="12" cy="12" r="2"/></svg></button></div></header><p>Проверка кнопки скачивания</p><div data-testid="videoPlayer"><span class="play">▷</span></div></article>`);
+    const before={header:await page.locator('header').boundingBox(),text:await page.locator('p').boundingBox(),video:await page.locator('[data-testid=videoPlayer]').boundingBox()};
+    const catalog=JSON.parse(fs.readFileSync(path.join(root,'_locales/en/messages.json'),'utf8'));
+    await page.evaluate(catalog=>{window.catalog=catalog;},catalog);
     await page.evaluate(() => {
       window.mockCounts={'100':1,'200':2};window.downloadCalls=[];
-      window.browser={runtime:{onMessage:{addListener:fn=>{window.fromBackground=fn;}},sendMessage:async m=>{
+      window.browser={i18n:{getMessage:(key,value)=>window.catalog[key]?.message.replace('$NUMBER$',value)||''},runtime:{onMessage:{addListener:fn=>{window.fromBackground=fn;}},sendMessage:async m=>{
         if(m.type==='xfd:lookup')return Object.fromEntries(m.ids.map(id=>[id,window.mockCounts[id]||0]));
         if(m.type==='xfd:download'){window.downloadCalls.push(m);return {ok:true};}
       }}};
@@ -28,13 +32,18 @@ const root = path.join(__dirname, '..');
     await page.addScriptTag({content:fs.readFileSync(path.join(root,'content.js'),'utf8')});
     const icon = page.locator('.xfd-button');await icon.waitFor();
     const [ib,cb]=await Promise.all([icon.boundingBox(),page.locator('[data-testid=caret]').boundingBox()]);
-    assert.ok(ib.x < cb.x);assert.ok(Math.abs(ib.y-cb.y)<1);
+    assert.ok(ib.x+ib.width < cb.x);assert.ok(Math.abs(ib.y+ib.height/2-cb.y-cb.height/2)<1);
+    assert.deepEqual(await page.locator('header').boundingBox(),before.header);
+    assert.deepEqual(await page.locator('p').boundingBox(),before.text);
+    assert.deepEqual(await page.locator('[data-testid=videoPlayer]').boundingBox(),before.video);
+    assert.equal(await icon.evaluate(el=>getComputedStyle(el).color),'rgb(113, 118, 123)');
+    assert.equal(await icon.getAttribute('title'),'Download video');
     await icon.click();
     assert.equal(await page.evaluate(()=>downloadCalls[0].id),'100');
     // React-style DOM reuse must bind the existing button to the new post.
     await page.evaluate(()=>{document.querySelector('time').parentElement.href='https://x.com/demo/status/200';});
     await icon.click();
-    const choice=page.getByRole('button',{name:'Скачать видео 2',exact:true});await choice.waitFor();
+    const choice=page.getByRole('button',{name:'Download video 2',exact:true});await choice.waitFor();
     await choice.click();assert.equal(await page.evaluate(()=>downloadCalls.at(-1).index),1);
     assert.equal(await page.evaluate(()=>downloadCalls.at(-1).id),'200');
     await icon.click();await choice.waitFor();await page.keyboard.press('Escape');
