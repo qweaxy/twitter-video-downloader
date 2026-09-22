@@ -76,6 +76,8 @@
     const icon = caret.querySelector("svg") || caret;
     const color = getComputedStyle(icon).color;
     if (button.style.color !== color) button.style.color = color;
+    const size = parseFloat(getComputedStyle(icon).width);
+    if (size > 0 && size <= 32) button.style.setProperty("--xfd-icon-size",`${size}px`);
   }
   function placeButton(button, caret) {
     const parent = caret.parentElement;
@@ -105,10 +107,10 @@
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("aria-hidden", "true");
     const path = document.createElementNS(svg.namespaceURI, "path");
-    path.setAttribute("d", "M12 3v12m-4.5-4.5L12 15l4.5-4.5M5 16.5V21h14v-4.5");
-    path.setAttribute("fill", "none"); path.setAttribute("stroke", "currentColor");
-    path.setAttribute("stroke-width", "1.5"); path.setAttribute("stroke-linecap", "round");
-    path.setAttribute("stroke-linejoin", "round"); svg.append(path); button.append(svg);
+    // Filled 2-unit geometry on a 24-unit grid, matching X's icon weight.
+    path.setAttribute("d", "M11 3h2v10.586l4.293-4.293 1.414 1.414L12 17.414l-6.707-6.707 1.414-1.414L11 13.586V3z M4 16h2v3.5c0 .276.224.5.5.5h11a.5.5 0 0 0 .5-.5V16h2v3.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5V16z");
+    path.setAttribute("fill", "currentColor");
+    svg.append(path); button.append(svg);
     button.addEventListener("click", clicked);
     // Out of normal flow: do not grow the header or move the text/video below it.
     // Only static parents need a positioning context; keep X's existing layout.

@@ -6,7 +6,7 @@
   border-radius: 999px; color: inherit; cursor: pointer;
   transition: background-color 120ms;
 }
-.xfd-button svg { width: 18px; height: 18px; pointer-events: none; }
+.xfd-button svg { width: var(--xfd-icon-size, 18.75px); height: var(--xfd-icon-size, 18.75px); pointer-events: none; }
 .xfd-button:hover { color: #1d9bf0 !important; background: rgba(29,155,240,.1); }
 .xfd-button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 1px; }
 .xfd-button:disabled { opacity: .45; cursor: progress; }
