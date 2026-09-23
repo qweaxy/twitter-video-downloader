@@ -1,4 +1,5 @@
 # Twitter Video Downloader
+**❗Расширение было сделано с помощью GPT-6 Astra**
 
 Удобная загрузка видео и GIF в X (Twitter).
 
