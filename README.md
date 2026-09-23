@@ -18,7 +18,8 @@
 - Выберите папку расширения и установите его
 - Расширение готово к работе!
 
-*placeholder для скриншотов*
+<img width="910" height="250" alt="firefox_0CP1c4Be3A" src="https://github.com/user-attachments/assets/d9b31afb-7dac-42e1-8509-35db37057194" />
+
 
 **Firefox**
 - Скачайте `.xpi` файл расширения
@@ -27,7 +28,8 @@
 - Выберите скачанный `.xpi` файл и установите его
 - Расширение готово к работе!
 
-*placeholder для скриншотов*
+<img width="1903" height="188" alt="chrome_e9ujlKRcBb" src="https://github.com/user-attachments/assets/a6f2f845-a80c-4edc-8f8d-0d0cae60c6d4" />
+
 
 ## Использование
 **Сохранение видео**
