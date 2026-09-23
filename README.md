@@ -18,13 +18,15 @@ The button follows X’s visual style: a muted icon with a blue hover state. Dow
 ### Features
 
 - **Download from the feed.** Click the icon beside the post’s menu to start saving a video.
-- **Automatic MP4 selection.** The extension chooses the available MP4 variant with the highest reported bitrate.
+- **Video quality controls.** Choose the best available MP4, a resolution limit, or the smallest available variant.
 - **Multiple videos.** If a post has several downloadable videos, choose one from a compact menu.
 - **A menu that fits X.** The media picker follows the page theme, with icons and bold labels. Use arrow keys to move, Enter to select, and Escape to close it.
 - **Reposts and quotes.** Supports video metadata in reposts and quoted posts. If a quote has its own video, that video takes priority.
 - **Real GIF files.** Media marked as an animation by X is converted locally into an animated `.gif`. Ordinary videos remain `.mp4`.
 - **English and Russian.** Messages follow the Firefox interface language, with English as the fallback for other languages.
-- **GIF size controls.** Set resolution as a percentage of the source, choose a frame rate and palette size, and control where downloads are saved.
+- **Simple GIF presets.** Choose high quality, balanced, or small file, then adjust resolution, frame rate and colors.
+- **Your own filenames.** Separate templates for videos and GIFs, clickable tags, live examples, and an optional download subfolder.
+- **Clear settings.** Three sections, light and dark themes, keyboard navigation, and English/Russian labels.
 - **Local processing.** No separate downloader server, API key, or additional account is required.
 
 ### Requirements
@@ -56,7 +58,7 @@ To sign a personal build, submit the ZIP through the [Mozilla Add-ons Developer 
 3. If the post contains multiple videos, choose the one you want.
 4. Check Firefox’s downloads panel for progress and the saved file.
 
-Files are named `X_<post ID>_<media number>.mp4` for videos and `X_<post ID>_<media number>.gif` for animations. Firefox’s download settings determine where they are saved and whether a file picker appears.
+By default, files are named `X_<source post ID>_<media number>.mp4` for videos and `.gif` for animations. Customize names and saving behavior in settings.
 
 For GIFs, the extension first retrieves X’s MP4 animation source and converts it into a looping GIF in your browser. A progress message appears during conversion. Keep the X tab open until the download starts; reloading or closing it cancels conversion. Only one GIF is converted at a time; ordinary MP4 downloads remain available.
 
@@ -66,24 +68,48 @@ The extension needs to receive the post’s video metadata after it loads. If a 
 
 Click **X Feed Download** in Firefox’s extensions menu or on the toolbar to open settings. You can also open the extension’s preferences in `about:addons`.
 
+Settings are split into **Video**, **GIF**, and **Files & names**. Presets are a quick starting point; the controls below them let you fine-tune each choice.
+
 | Setting | Choices | Default |
 | --- | --- | --- |
-| GIF resolution | 10–100% of the source width and height; shortcuts for 25%, 50%, 75%, 100% | 100% |
+| Video quality | Best available, up to 1080p / 720p / 480p / 360p, smallest available | Best available |
+| GIF resolution | 10–100% of the source width and height | 100% |
 | GIF frame rate | 5, 10, 15, 20, 25 or 30 fps | 20 fps |
 | GIF colors per frame | 64, 128 or 256 | 256 |
-| Saving files | Follow Firefox settings, ask every time, or use the default downloads folder | Follow Firefox settings |
+| Video / GIF filename | Separate templates with tags and a live example | `X_{id}_{index}` |
+| Saving files | Follow Firefox settings, ask every time, or use the default download folder | Follow Firefox settings |
+| Subfolder | One folder inside Firefox’s default download folder | None |
 
-At **50%**, a 1280 × 720 animation becomes **640 × 360**: half the width and height, one quarter of the pixels. The settings page shows an example as you change the percentage. Actual file-size savings depend on the animation, frame rate and palette.
+**Video:** the extension downloads an existing MP4 from X without re-encoding it. A resolution limit uses the closest available size at or below that limit; if all variants are larger, it uses the smallest known resolution. Resolution means the shorter edge, so the same rule works for portrait videos. If dimensions are unavailable, it falls back to the highest reported bitrate. “Smallest available” selects the lowest reported bitrate; actual bytes are not measured in advance. Sound, duration and frame rate remain those of the selected source.
 
-For a smaller GIF, try **50%, 15 fps, 128 colors**. Lower frame rates reduce smoothness; fewer colors can make gradients less smooth. Video downloads remain at their selected MP4 quality.
+**GIF:** presets are **High quality** (100%, 20 fps, 256 colors), **Balanced** (50%, 15 fps, 128 colors), and **Small file** (25%, 10 fps, 64 colors). At **50%**, a 1280 × 720 animation becomes **640 × 360**: half the width and height, one quarter of the pixels. File-size savings depend on the animation. Lower frame rates reduce smoothness; fewer colors can make gradients less smooth. Video quality settings do not affect the GIF source.
 
-Click **Save settings** to apply your choices. They are kept locally in your Firefox profile and used for the next download. A conversion already in progress keeps the settings it started with. **Reset to defaults** restores values in the form; save to apply them. Uninstalling the extension can remove its stored settings.
+#### Filename templates
+
+Pick a ready-made template or edit video and GIF names separately. Select an input, then click tags to insert them at the cursor. The preview uses an example post. File extensions are added automatically.
+
+| Tag | Value |
+| --- | --- |
+| `{author}` | Source author’s username, without `@` |
+| `{id}` | Source post ID |
+| `{date}` | Post date, `YYYY-MM-DD` in UTC |
+| `{download_date}` | Download date, `YYYY-MM-DD` in UTC |
+| `{text}` | First 80 characters of the source post text |
+| `{index}` | Media number in the selected post, starting at 1 |
+| `{type}` | `video` or `gif` |
+| `{resolution}` | Output dimensions, e.g. `640x360`; includes GIF scaling |
+
+Example: `{date}_{author}_{id}_{index}` → `2026-09-20_alex_1900000000000000000_1.mp4`.
+
+For reposts and quotes, tags describe the source post containing the selected media. Missing author, date or resolution becomes `unknown`; missing text uses the post ID. Unsupported filename characters are replaced, long names are shortened safely, and collisions get a unique filename rather than overwriting an existing file. Templates accept up to 180 characters. The subfolder is a single name, not an arbitrary path; the save dialog can override its destination.
+
+Click **Save settings** to apply your choices. They are kept locally in your Firefox profile and used for the next download. A conversion already in progress keeps the settings it started with. **Reset to defaults** restores values in the form; save to apply them. Updating preserves existing preferences and supplies defaults for new settings. Uninstalling the extension can remove its stored settings.
 
 ### Privacy and permissions
 
 Video metadata is processed locally in your browser. The extension does not send post data to an external downloader or analytics service, and it does not request your password, an API key, or permission to read cookies.
 
-It temporarily keeps post IDs, media types, and video URLs/bitrates in memory, with a limit of 600 posts per tab. This cache is cleared when the tab reloads or closes. GIF conversion also holds the source animation and encoded frames in memory until they can be released. Direct-message requests are not among the operations it processes.
+It temporarily keeps post IDs, media types, MP4 variants and dimensions, authors, dates, and up to 80 characters of source post text in memory for filenames, with a limit of 600 posts per tab. This cache is cleared when the tab reloads or closes. GIF conversion also holds the source animation and encoded frames in memory until they can be released. Direct-message requests are not among the operations it processes.
 
 | Permission | Purpose |
 | --- | --- |
@@ -117,7 +143,7 @@ The extension uses plain JavaScript, CSS, and Firefox WebExtensions APIs. No bui
 Run the core tests from the extension folder:
 
 ```sh
-node --test tests/core.test.cjs tests/settings.test.cjs tests/response-monitor.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs tests/filenames.test.cjs tests/response-monitor.test.cjs
 ```
 
 Conversion and encoder tests:
@@ -147,13 +173,15 @@ X Feed Download добавляет небольшую иконку скачив�
 ### Возможности
 
 - **Скачивание из ленты.** Нажми иконку рядом с меню поста, чтобы сохранить видео.
-- **Автоматический выбор MP4.** Расширение выбирает доступный MP4-вариант с наибольшим указанным битрейтом.
+- **Качество видео на выбор.** Лучший доступный MP4, ограничение разрешения или самый маленький вариант.
 - **Несколько видео.** Если в посте несколько доступных роликов, выбери нужный в небольшом меню.
 - **Меню в стиле X.** Выбор медиа подстраивается под тему страницы, с иконками и жирными подписями. Стрелки переключают пункты, Enter выбирает, Escape закрывает меню.
 - **Репосты и цитаты.** Поддерживаются метаданные видео из репостов и цитируемых постов. Если у цитаты есть собственное видео, приоритет отдаётся ему.
 - **Настоящие GIF-файлы.** Медиа, отмеченные X как анимации, локально преобразуются в анимированный `.gif`. Обычные видео сохраняются в `.mp4`.
 - **Русский и английский.** Язык сообщений определяется языком интерфейса Firefox. Для остальных языков используется английский.
-- **Настройка размера GIF.** Выбирай разрешение в процентах от исходного, частоту кадров, размер палитры и способ сохранения файлов.
+- **Готовые настройки GIF.** Высокое качество, баланс или маленький файл, с отдельной настройкой разрешения, плавности и цветов.
+- **Свои имена файлов.** Раздельные шаблоны видео и GIF, вставка тегов кнопками, предпросмотр и подпапка для загрузок.
+- **Понятные настройки.** Три раздела, светлая и тёмная темы, управление с клавиатуры, русский и английский языки.
 - **Локальная обработка.** Отдельный сервер-загрузчик, API-ключ и дополнительный аккаунт не нужны.
 
 ### Требования
@@ -185,7 +213,7 @@ X Feed Download добавляет небольшую иконку скачив�
 3. Если видео несколько, выбери нужное.
 4. Следи за загрузкой и открой сохранённый файл через панель загрузок Firefox.
 
-Видео получают имена `X_<номер поста>_<номер медиа>.mp4`, а анимации — `X_<номер поста>_<номер медиа>.gif`. Папка сохранения и появление диалога выбора файла зависят от настроек загрузок Firefox.
+По умолчанию видео получают имена `X_<номер исходного поста>_<номер медиа>.mp4`, а анимации — `.gif`. Имена и способ сохранения можно изменить в настройках.
 
 Для GIF расширение сначала получает MP4-источник анимации с серверов X и преобразует его в зацикленный GIF прямо в браузере. Во время преобразования отображается прогресс. Держи вкладку X открытой до начала скачивания: её закрытие или перезагрузка отменяет преобразование. Одновременно создаётся один GIF; скачивание обычных MP4 остаётся доступным.
 
@@ -195,24 +223,48 @@ X Feed Download добавляет небольшую иконку скачив�
 
 Нажми **X Feed Download** в меню расширений Firefox или на панели инструментов, чтобы открыть настройки. Они также доступны в параметрах дополнения на странице `about:addons`.
 
+Настройки разделены на **«Видео»**, **«GIF»** и **«Файлы и имена»**. Готовые варианты позволяют быстро начать, а поля под ними — изменить отдельные параметры.
+
 | Настройка | Варианты | По умолчанию |
 | --- | --- | --- |
-| Разрешение GIF | 10–100% исходной ширины и высоты; быстрые кнопки 25%, 50%, 75%, 100% | 100% |
+| Качество видео | Лучшее доступное, до 1080p / 720p / 480p / 360p, самый маленький вариант | Лучшее доступное |
+| Разрешение GIF | 10–100% исходной ширины и высоты | 100% |
 | Частота кадров GIF | 5, 10, 15, 20, 25 или 30 кадров/с | 20 кадров/с |
 | Цветов на кадр GIF | 64, 128 или 256 | 256 |
-| Сохранение файлов | По настройкам Firefox, спрашивать каждый раз или использовать папку загрузок по умолчанию | По настройкам Firefox |
+| Имя видео / GIF | Отдельные шаблоны с тегами и предпросмотром | `X_{id}_{index}` |
+| Сохранение файлов | По настройкам Firefox, спрашивать каждый раз или использовать папку загрузок | По настройкам Firefox |
+| Подпапка | Одна папка внутри папки загрузок Firefox | Без подпапки |
 
-При **50%** анимация 1280 × 720 превращается в **640 × 360**: ширина и высота вдвое меньше, пикселей — вчетверо меньше. На странице настроек есть пример, который меняется вместе с процентом. Насколько уменьшится вес файла, зависит от содержимого анимации, частоты кадров и палитры.
+**Видео:** расширение скачивает готовый MP4 с серверов X без перекодирования. При ограничении разрешения выбирается ближайший доступный вариант не выше указанного; если все больше — минимальное известное разрешение. Учитывается короткая сторона, поэтому правило работает и для вертикальных видео. Если размеры неизвестны, выбирается наибольший указанный битрейт. «Самый маленький вариант» означает минимальный указанный битрейт: точный вес заранее не измеряется. Звук, длительность и частота кадров остаются как у выбранного источника.
 
-Для небольшого GIF попробуй **50%, 15 кадров/с, 128 цветов**. Уменьшение частоты кадров снижает плавность движения, а небольшая палитра может сделать переходы цветов грубее. Качество скачиваемых MP4 не меняется.
+**GIF:** готовые варианты — **«Высокое качество»** (100%, 20 кадров/с, 256 цветов), **«Баланс»** (50%, 15 кадров/с, 128 цветов) и **«Маленький файл»** (25%, 10 кадров/с, 64 цвета). При **50%** анимация 1280 × 720 превращается в **640 × 360**: ширина и высота вдвое меньше, пикселей — вчетверо меньше. Экономия места зависит от содержимого. Снижение частоты кадров уменьшает плавность, а небольшая палитра может сделать переходы цветов грубее. Настройка качества видео не влияет на источник GIF.
 
-Нажми **«Сохранить настройки»**, чтобы применить выбор. Настройки хранятся локально в профиле Firefox и используются при следующем скачивании. Уже запущенное преобразование продолжит работу с прежними параметрами. **«Вернуть исходные»** восстанавливает значения в форме — для применения нужно сохранить их. При удалении расширения его настройки могут быть удалены.
+#### Шаблоны имён файлов
+
+Выбери готовый вариант или задай свои имена отдельно для видео и GIF. Нажми на поле, затем на тег — он вставится на место курсора. Предпросмотр показывает результат на примере поста. Расширение файла добавляется автоматически.
+
+| Тег | Значение |
+| --- | --- |
+| `{author}` | Имя автора исходного поста без `@` |
+| `{id}` | ID исходного поста |
+| `{date}` | Дата поста, `ГГГГ-ММ-ДД`, по UTC |
+| `{download_date}` | Дата загрузки, `ГГГГ-ММ-ДД`, по UTC |
+| `{text}` | Первые 80 символов текста исходного поста |
+| `{index}` | Номер медиа в выбранном посте, начиная с 1 |
+| `{type}` | `video` или `gif` |
+| `{resolution}` | Размеры результата, например `640x360`, с учётом масштаба GIF |
+
+Пример: `{date}_{author}_{id}_{index}` → `2026-09-20_alex_1900000000000000000_1.mp4`.
+
+Для репостов и цитат используются данные исходного поста с выбранным медиа. Если автор, дата или разрешение неизвестны, подставляется `unknown`, вместо отсутствующего текста — ID поста. Недопустимые символы заменяются, длинные имена сокращаются. При совпадении имён создаётся уникальное имя без перезаписи существующего файла. Длина шаблона — до 180 символов. Подпапка задаётся одним именем, а не произвольным путём; в диалоге сохранения можно выбрать другое место.
+
+Нажми **«Сохранить настройки»**, чтобы применить выбор. Настройки хранятся локально в профиле Firefox и используются при следующем скачивании. Уже запущенное преобразование продолжит работу с прежними параметрами. **«Вернуть исходные»** восстанавливает значения в форме — для применения нужно сохранить их. Обновление сохраняет прежние настройки и добавляет значения по умолчанию для новых. При удалении расширения его настройки могут быть удалены.
 
 ### Конфиденциальность и разрешения
 
 Метаданные видео обрабатываются локально в браузере. Расширение не отправляет данные постов стороннему загрузчику или сервису аналитики и не запрашивает пароль, API-ключ или разрешение на чтение cookies.
 
-Номера постов, типы медиа, ссылки на видео и их битрейты временно хранятся в оперативной памяти — до 600 постов на вкладку. Кэш очищается при перезагрузке или закрытии вкладки. При создании GIF в памяти также временно хранятся исходная анимация и закодированные кадры. Запросы личных сообщений не входят в список обрабатываемых операций.
+Для имён файлов в оперативной памяти временно хранятся номера постов, типы медиа, варианты MP4 и их размеры, имена авторов, даты и до 80 символов текста исходного поста — до 600 постов на вкладку. Кэш очищается при перезагрузке или закрытии вкладки. При создании GIF в памяти также временно хранятся исходная анимация и закодированные кадры. Запросы личных сообщений не входят в список обрабатываемых операций.
 
 | Разрешение | Для чего нужно |
 | --- | --- |
@@ -246,7 +298,7 @@ X Feed Download добавляет небольшую иконку скачив�
 Основные тесты запускаются из папки расширения:
 
 ```sh
-node --test tests/core.test.cjs tests/settings.test.cjs tests/response-monitor.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs tests/filenames.test.cjs tests/response-monitor.test.cjs
 ```
 
 Тесты преобразования и кодировщика:

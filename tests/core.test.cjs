@@ -27,8 +27,9 @@ function env(locale = 'en', preferences) {
     runtime:{onMessage:event('message'),openOptionsPage:async()=>{messages.push(['options']);}},
     downloads:{download:async opts=>{downloads.push(opts);return 10;},search:async()=>[{state:'in_progress'}],onChanged:event('downloadChanged'),onErased:event('downloadErased')}
   };
-  const ctx=vm.createContext({URL,TextDecoder,browser,AbortController,Blob,setTimeout,clearTimeout,
+  const ctx=vm.createContext({URL,TextDecoder,TextEncoder,browser,AbortController,Blob,setTimeout,clearTimeout,
     addEventListener:(name,fn)=>{callbacks[name]=fn;}});
+  vm.runInContext(fs.readFileSync(path.join(root,'filenames.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),ctx);
   vm.runInContext(fs.readFileSync(path.join(root,'response-monitor.js'),'utf8'),ctx);
   vm.runInContext(mediaSource,ctx);vm.runInContext(bgSource,ctx);
@@ -190,4 +191,42 @@ test('saved scale/fps/colors reach GIF conversion and saving preference reaches 
   await e.callbacks.message({type:'xfd:download',id:'601'},sender);
   assert.equal(Object.hasOwn(e.downloads[2],'saveAs'),false);
   e.callbacks.action();assert.deepEqual(e.messages.at(-1),['options']);
+});
+
+test('quality caps use the shorter edge, preserve metadata, and have defined fallbacks',()=>{
+  const m=env().ctx.XFDMedia;
+  const unknown={url:'https://video.twimg.com/a.mp4',bitrate:999,width:0,height:0};
+  const item={type:'video',author:'alex',variants:[unknown,
+    {url:low,bitrate:10,width:180,height:320},{url:high,bitrate:200,width:720,height:1280}]};
+  assert.equal(m.selectVariant(item,'best').url,unknown.url);
+  assert.equal(m.selectVariant(item,'smallest').url,low);
+  assert.equal(m.selectVariant(item,'480').url,low);
+  assert.equal(m.selectVariant(item,'720').url,high);
+  assert.equal(m.selectVariant(item,'1080').author,'alex');
+  assert.equal(m.selectVariant({...item,variants:[item.variants[2]]},'360').url,high);
+  assert.equal(m.selectVariant({...item,variants:[unknown]},'720').url,unknown.url);
+});
+test('source metadata survives duplicate legacy objects and quoted post wrappers',()=>{
+  const m=env().ctx.XFDMedia,source=tweet('888',[media(high)]);
+  source.legacy.id_str='888';source.legacy.created_at='Sun Sep 20 12:00:00 +0000 2026';source.legacy.full_text='Source caption';
+  source.core={user_results:{result:{core:{screen_name:'alex'}}}};
+  const wrapper={rest_id:'999',legacy:{full_text:'Quote caption'},quoted_status_result:{result:source}};
+  const result=m.extract(wrapper);
+  for(const id of ['888','999']) {
+    const item=result.get(id)[0];assert.equal(item.author,'alex');assert.equal(item.sourceId,'888');
+    assert.equal(item.text,'Source caption');assert.equal(item.createdAt,source.legacy.created_at);
+    assert.equal(item.width,1280);assert.equal(item.height,720);
+  }
+});
+test('downloads honor video quality, distinct naming templates and subfolder; GIF keeps best source',async()=>{
+  const e=env('en',{videoQuality:'smallest',videoTemplate:'{author}_{resolution}_{index}',gifTemplate:'{type}_{resolution}_{id}',downloadFolder:'Saved',gifScale:50});
+  const post=tweet('801',[media(low,10),media(high,200)]);
+  post.core={user_results:{result:{legacy:{screen_name:'alex'}}}};capture(e,post);
+  assert.equal((await e.callbacks.message({type:'xfd:download',id:'801'},sender)).ok,true);
+  assert.equal(e.downloads[0].url,low);assert.equal(e.downloads[0].filename,'Saved/alex_320x180_1.mp4');
+  post.rest_id='802';post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  e.ctx.XFDGif={convert:async url=>{assert.equal(url,high);return new Blob(['GIF89a'],{type:'image/gif'});}};
+  assert.equal((await e.callbacks.message({type:'xfd:download',id:'802'},sender)).ok,true);
+  assert.equal(e.downloads[1].filename,'Saved/gif_640x360_802.gif');
+  e.callbacks.downloadChanged({id:10,state:{current:'complete'}});
 });

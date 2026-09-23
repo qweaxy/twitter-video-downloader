@@ -15,9 +15,9 @@
 .xfd-button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 1px; }
 .xfd-button:disabled { opacity: .45; cursor: progress; }
 .xfd-toast {
-  position: fixed; z-index: 2147483647; font: 14px/1.45 system-ui,sans-serif;
-  color: #e7e9ea; background: #16181c; border: 1px solid #536471;
-  border-radius: 12px; box-shadow: 0 4px 24px #0005;
+  position: fixed; z-index: 2147483647; font: 15px/20px "TwitterChirp",Arial,Helvetica,sans-serif;
+  color: #fff; background: #1d9bf0; border: 0;
+  border-radius: 4px;
 }
 .xfd-panel {
   position: fixed; z-index: 2147483647; box-sizing: border-box;
@@ -26,7 +26,7 @@
   padding: 0; border: 0; border-radius: 12px;
   background: var(--xfd-menu-bg, #000); color: #e7e9ea;
   box-shadow: 0 0 15px rgba(255,255,255,.2), 0 0 3px 1px rgba(255,255,255,.15);
-  font: 15px/20px system-ui,sans-serif;
+  font: 15px/20px "TwitterChirp",Arial,Helvetica,sans-serif;
 }
 .xfd-panel[data-theme="light"] {
   color: #0f1419;

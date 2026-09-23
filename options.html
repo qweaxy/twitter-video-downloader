@@ -1,67 +1,88 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>X Feed Download — Settings</title>
   <link rel="stylesheet" href="options.css">
-  <script defer src="settings.js"></script>
-  <script defer src="options.js"></script>
+  <script defer src="filenames.js"></script><script defer src="settings.js"></script><script defer src="media.js"></script><script defer src="options.js"></script>
 </head>
 <body>
-  <main>
-    <header>
-      <div class="brand"><img src="icon.svg" alt="" width="24" height="24"><span>X Feed Download</span></div>
-      <h1 data-i18n="settingsTitle">Settings</h1>
-      <p class="subtitle" data-i18n="settingsSubtitle">Tune GIF size and quality for your next download.</p>
-    </header>
-    <form id="settings-form">
-      <fieldset id="controls" disabled>
-        <section class="card" aria-labelledby="gif-title">
-          <div class="section-heading"><h2 id="gif-title" data-i18n="gifSettings">GIF conversion</h2><span class="badge">GIF</span></div>
-          <div class="field">
-            <label for="gifScale" data-i18n="gifScaleLabel">Resolution</label>
-            <div class="scale-row">
-              <input id="scaleRange" type="range" min="10" max="100" step="1" value="100" aria-labelledby="scale-label">
-              <div class="number-wrap"><input id="gifScale" type="number" min="10" max="100" step="1" value="100" required aria-describedby="scaleHelp scaleExample"><span>%</span></div>
-            </div>
-            <span id="scale-label" class="sr-only" data-i18n="gifScaleLabel">Resolution</span>
-            <div class="presets" role="group" data-i18n-aria="scalePresets">
-              <button type="button" data-scale="25" aria-pressed="false">25%</button>
-              <button type="button" data-scale="50" aria-pressed="false">50%</button>
-              <button type="button" data-scale="75" aria-pressed="false">75%</button>
-              <button type="button" data-scale="100" aria-pressed="true">100%</button>
-            </div>
-            <p id="scaleHelp" class="help" data-i18n="scaleHelp">Percentage of the original width and height. 50% means one quarter of the pixels.</p>
-            <div class="example" id="scaleExample" aria-live="polite"></div>
+<main>
+  <header class="page-header">
+    <div class="brand"><img src="icon.svg" alt="" width="28" height="28"><span>X Feed Download</span><span class="version">0.4.2</span></div>
+    <h1 data-i18n="settingsHeadline">Your downloads. Your way.</h1>
+    <p class="subtitle" data-i18n="settingsIntro">Choose the quality, give files a useful name, and keep saving from your feed.</p>
+  </header>
+  <nav class="tabs" role="tablist" data-i18n-aria="settingsSections">
+    <button id="tab-video" role="tab" aria-controls="panel-video" aria-selected="true" tabindex="0" data-tab="video"><span aria-hidden="true">01</span><span data-i18n="videoTab">Video</span></button>
+    <button id="tab-gif" role="tab" aria-controls="panel-gif" aria-selected="false" tabindex="-1" data-tab="gif"><span aria-hidden="true">02</span><span data-i18n="gifTab">GIF</span></button>
+    <button id="tab-files" role="tab" aria-controls="panel-files" aria-selected="false" tabindex="-1" data-tab="files"><span aria-hidden="true">03</span><span data-i18n="filesTab">Files & names</span></button>
+  </nav>
+  <form id="settings-form">
+    <fieldset id="controls" disabled>
+      <section id="panel-video" role="tabpanel" aria-labelledby="tab-video" class="card">
+        <div class="section-heading"><div><h2 data-i18n="videoQualityTitle">How much detail do you want?</h2><p class="help" data-i18n="videoQualityIntro">Pick what matters most. Videos are saved as MP4.</p></div><span class="badge">MP4</span></div>
+        <div class="preset-grid" role="group" data-i18n-aria="videoPresets">
+          <button type="button" class="preset" data-video="best" aria-pressed="true"><strong data-i18n="presetBest">Best quality</strong><span data-i18n="videoBestHint">Most detail available</span></button>
+          <button type="button" class="preset" data-video="720" aria-pressed="false"><strong data-i18n="presetBalanced">Balanced</strong><span data-i18n="videoBalancedHint">Up to 720p</span></button>
+          <button type="button" class="preset" data-video="smallest" aria-pressed="false"><strong data-i18n="presetCompact">Small file</strong><span data-i18n="videoCompactHint">Lowest available bitrate</span></button>
+        </div>
+        <div class="field"><label for="videoQuality" data-i18n="videoQualityLabel">Video quality</label>
+          <select id="videoQuality" aria-describedby="videoQualityHelp"><option value="best" data-i18n="qualityBest">Best available</option><option value="1080">1080p</option><option value="720">720p</option><option value="480">480p</option><option value="360">360p</option><option value="smallest" data-i18n="qualitySmallest">Smallest available</option></select>
+          <p class="help" id="videoQualityHelp" data-i18n="videoQualityHelp">Uses an MP4 offered by X, without re-encoding. If your chosen size is unavailable, the closest lower size is used; if all are larger, the smallest is used. Unknown sizes use the best available variant.</p>
+        </div>
+        <div class="notice"><span class="notice-dot" aria-hidden="true"></span><p data-i18n="videoSoundNote">Video and sound stay together. Original duration and frame rate are preserved.</p></div>
+      </section>
+      <section id="panel-gif" role="tabpanel" aria-labelledby="tab-gif" class="card" hidden>
+        <div class="section-heading"><div><h2 data-i18n="gifQualityTitle">A lighter GIF, in one click.</h2><p class="help" data-i18n="gifQualityIntro">Start with a preset, then fine-tune if you want.</p></div><span class="badge">GIF</span></div>
+        <div class="preset-grid" role="group" data-i18n-aria="gifPresets">
+          <button type="button" class="preset" data-gif="quality" aria-pressed="true"><strong data-i18n="presetBest">Best quality</strong><span data-i18n="gifQualityHint">100% · 20 fps · 256 colors</span></button>
+          <button type="button" class="preset" data-gif="balanced" aria-pressed="false"><strong data-i18n="presetBalanced">Balanced</strong><span data-i18n="gifBalancedHint">50% · 15 fps · 128 colors</span></button>
+          <button type="button" class="preset" data-gif="compact" aria-pressed="false"><strong data-i18n="presetCompact">Small file</strong><span data-i18n="gifCompactHint">25% · 10 fps · 64 colors</span></button>
+        </div>
+        <div class="field"><label for="gifScale" data-i18n="gifScaleLabel">Resolution</label>
+          <div class="scale-row"><input id="scaleRange" type="range" min="10" max="100" step="1" value="100" aria-labelledby="scale-label"><div class="number-wrap"><input id="gifScale" type="number" min="10" max="100" step="1" value="100" required aria-describedby="scaleHelp scaleExample"><span>%</span></div></div>
+          <span id="scale-label" class="sr-only" data-i18n="gifScaleLabel">Resolution</span>
+          <div class="chips" role="group" data-i18n-aria="scalePresets"><button type="button" data-scale="25">25%</button><button type="button" data-scale="50">50%</button><button type="button" data-scale="75">75%</button><button type="button" data-scale="100">100%</button></div>
+          <p id="scaleHelp" class="help" data-i18n="scaleHelp">Percentage of the original width and height. 50% means one quarter of the pixels.</p>
+          <div class="example" id="scaleExample" aria-live="polite"></div>
+        </div>
+        <details class="advanced"><summary data-i18n="fineTuneGif">Fine-tune motion and colors</summary><div class="two-columns">
+          <div class="field"><label for="gifFps" data-i18n="fpsLabel">Frame rate</label><select id="gifFps" aria-describedby="fpsHelp"><option value="5">5 fps</option><option value="10">10 fps</option><option value="15">15 fps</option><option value="20" selected>20 fps</option><option value="25">25 fps</option><option value="30">30 fps</option></select><p class="help" id="fpsHelp" data-i18n="fpsHelp">Fewer frames make a smaller file. More frames keep motion smoother.</p></div>
+          <div class="field"><label for="gifColors" data-i18n="colorsLabel">Colors per frame</label><select id="gifColors" aria-describedby="colorsHelp"><option value="64">64</option><option value="128">128</option><option value="256" selected>256</option></select><p class="help" id="colorsHelp" data-i18n="colorsHelp">A smaller palette can reduce file size but may show color banding.</p></div>
+        </div></details>
+      </section>
+      <section id="panel-files" role="tabpanel" aria-labelledby="tab-files" class="card" hidden>
+        <div class="section-heading"><div><h2 data-i18n="filesTitle">Find your files at a glance.</h2><p class="help" data-i18n="filesIntro">Use a ready-made name or create your own with tags.</p></div></div>
+        <div class="chips naming-presets" role="group" data-i18n-aria="namePresets"><button type="button" data-name="classic" data-i18n="nameClassic">Simple</button><button type="button" data-name="author" data-i18n="nameAuthor">Author + post</button><button type="button" data-name="date" data-i18n="nameDate">Date + author</button></div>
+        <div class="name-grid">
+          <div class="name-editor">
+            <div class="field"><label for="videoTemplate" data-i18n="videoNameLabel">Video filename</label><input id="videoTemplate" type="text" maxlength="180" required spellcheck="false" value="X_{id}_{index}" aria-describedby="nameHelp"></div>
+            <div class="field"><label for="gifTemplate" data-i18n="gifNameLabel">GIF filename</label><input id="gifTemplate" type="text" maxlength="180" required spellcheck="false" value="X_{id}_{index}" aria-describedby="nameHelp"></div>
+            <p id="nameHelp" class="help" data-i18n="nameHelp">The extension adds .mp4 or .gif for you. Click a tag to insert it into the selected field.</p>
+            <p id="tagTarget" class="tag-target" aria-live="polite"></p>
+            <div id="tag-buttons" class="tag-chips" role="group" data-i18n-aria="availableTags"></div>
           </div>
-          <div class="two-columns">
-            <div class="field">
-              <label for="gifFps" data-i18n="fpsLabel">Frame rate</label>
-              <select id="gifFps" aria-describedby="fpsHelp"><option value="5">5 fps</option><option value="10">10 fps</option><option value="15">15 fps</option><option value="20" selected>20 fps</option><option value="25">25 fps</option><option value="30">30 fps</option></select>
-              <p class="help" id="fpsHelp" data-i18n="fpsHelp">Fewer frames make a smaller file. More frames keep motion smoother.</p>
-            </div>
-            <div class="field">
-              <label for="gifColors" data-i18n="colorsLabel">Colors per frame</label>
-              <select id="gifColors" aria-describedby="colorsHelp"><option value="64">64</option><option value="128">128</option><option value="256" selected>256</option></select>
-              <p class="help" id="colorsHelp" data-i18n="colorsHelp">A smaller palette can reduce file size but may show color banding.</p>
-            </div>
-          </div>
-          <p class="footnote" data-i18n="gifOnlyNote">These settings apply to GIFs. Videos keep their original MP4 quality.</p>
-        </section>
-        <section class="card" aria-labelledby="downloads-title">
-          <h2 id="downloads-title" data-i18n="downloadSettings">Saving files</h2>
-          <div class="field">
-            <label for="saveLocation" data-i18n="saveLocationLabel">Where to save</label>
-            <select id="saveLocation"><option value="browser" data-i18n="locationBrowser">Follow Firefox settings</option><option value="ask" data-i18n="locationAsk">Ask every time</option><option value="downloads" data-i18n="locationDownloads">Use the default downloads folder</option></select>
-            <p class="help" data-i18n="locationHelp">Applies to both videos and GIFs.</p>
-          </div>
-        </section>
-        <div class="actions"><button type="submit" class="primary" data-i18n="saveSettings">Save settings</button><button type="button" id="reset" data-i18n="resetSettings">Reset to defaults</button></div>
-      </fieldset>
-      <p id="status" role="status" aria-live="polite"></p>
-    </form>
-    <footer data-i18n="settingsFooter">Settings stay in this Firefox profile. Saved changes apply to the next download.</footer>
-  </main>
+          <aside class="preview" aria-labelledby="preview-title">
+            <div class="preview-heading"><span class="live-dot" aria-hidden="true"></span><h3 id="preview-title" data-i18n="filenamePreview">Filename preview</h3></div>
+            <p class="help" data-i18n="previewSampleNote">Example post by @alex, dated 2026-09-20.</p>
+            <div class="file-preview"><span class="file-badge">MP4</span><output id="videoNamePreview" aria-live="polite"></output></div>
+            <div class="file-preview"><span class="file-badge">GIF</span><output id="gifNamePreview" aria-live="polite"></output></div>
+            <p class="help" data-i18n="filenameSafety">Unsupported filename characters are replaced automatically. Existing files are never overwritten.</p>
+          </aside>
+        </div>
+        <details class="advanced"><summary data-i18n="tagReference">What each tag means</summary><dl id="tag-reference" class="tag-reference"></dl><p class="help" data-i18n="tagMissingNote">Missing author, date or resolution becomes “unknown”. Missing text uses the post ID. Dates use UTC. For reposts and quotes, tags describe the source post containing the media.</p></details>
+        <div class="divider"></div>
+        <h3 data-i18n="downloadSettings">Saving files</h3>
+        <div class="two-columns">
+          <div class="field"><label for="saveLocation" data-i18n="saveLocationLabel">Where to save</label><select id="saveLocation"><option value="browser" data-i18n="locationBrowser">Follow Firefox settings</option><option value="ask" data-i18n="locationAsk">Ask every time</option><option value="downloads" data-i18n="locationDownloads">Use the default downloads folder</option></select><p class="help" data-i18n="locationHelp">Applies to both videos and GIFs.</p></div>
+          <div class="field"><label for="downloadFolder" data-i18n="folderLabel">Subfolder (optional)</label><input id="downloadFolder" type="text" maxlength="80" placeholder="X Feed Download" spellcheck="false"><p class="help" data-i18n="folderHelp">A single folder inside your Downloads folder. Leave blank to use the folder itself. The save dialog can override this.</p></div>
+        </div>
+      </section>
+      <div class="save-bar"><div><p id="status" role="status" aria-live="polite"></p><p class="save-caption" data-i18n="applyNext">Changes apply to the next download.</p></div><div class="actions"><button type="button" id="reset" class="quiet" data-i18n="resetSettings">Reset to defaults</button><button type="submit" class="primary" data-i18n="saveSettings">Save settings</button></div></div>
+    </fieldset>
+  </form>
+  <footer data-i18n="settingsFooter">Settings stay in this Firefox profile.</footer>
+</main>
 </body>
 </html>

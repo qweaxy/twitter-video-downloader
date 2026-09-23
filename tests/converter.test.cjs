@@ -29,13 +29,14 @@ function environment({duration=.15,size=4*4,fail=false,hangWorker=false}={}) {
   const context=vm.createContext({
     XFDMedia:{mp4URL:url=>url},
     browser:{runtime:{getURL:name=>name}},
-    Worker,Blob,setTimeout,clearTimeout,
+    TextEncoder,Worker,Blob,setTimeout,clearTimeout,
     URL:{createObjectURL(blob){const url='blob:'+blobs.size;blobs.set(url,blob);return url;},revokeObjectURL(url){revoked.push(url);}},
     fetch:async()=>{if(fail)throw new Error('fetch failed');return new Response(new Uint8Array(8));},
     document:{createElement:name=>name==='video'?video:{getContext:()=>({drawImage(video,x,y,w,h){draws.push([w,h]);},getImageData(x,y,w,h){
       const data=new Uint8ClampedArray(w*h*4);for(let i=0;i<w*h;i++)data.set([frame*40,80,120,255],i*4);return {data};
     }})}}
   });
+  vm.runInContext(fs.readFileSync(path.join(root,'filenames.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'gif-converter.js'),'utf8'),context);
   return {convert:context.XFDGif.convert,seeks,revoked,progress,workers,draws,video};

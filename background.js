@@ -58,7 +58,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   const media = cache?.get(message.id);
   if (!media?.length) return {ok: false, error: t("linkMissing")};
   const index = Number.isInteger(message.index) ? message.index : 0;
-  const item = media[index];
+  let item = media[index];
   if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
   let objectURL = null, conversion = null, timeout = null;
   const operation = {tabId:sender.tab.id,controller:new AbortController(),timer:null};
@@ -68,6 +68,8 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     try { settings = await XFDSettings.load(); }
     catch { return {ok:false,error:t("settingsLoadFailed")}; }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
+    item = XFDMedia.selectVariant(item,item.type === "gif" ? "best" : settings.videoQuality);
+    if (!item) return {ok:false,error:t("variantUnavailable")};
     if (item.type === "gif") {
       if (gifJob) return {ok:false,error:t("gifBusy")};
       conversion = operation;
@@ -88,7 +90,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
     const id = await browser.downloads.download({
-      url: objectURL || item.url, filename: `X_${message.id}_${index + 1}.${item.type === "gif" ? "gif" : "mp4"}`,
+      url: objectURL || item.url, filename: XFDFilenames.build(settings,item,message.id,index),
       conflictAction: "uniquify", incognito: !!sender.tab.incognito,
       ...(settings.saveLocation === "browser" ? {} : {saveAs:settings.saveLocation === "ask"})
     });

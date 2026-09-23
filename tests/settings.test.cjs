@@ -6,7 +6,8 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const source=fs.readFileSync(path.join(root,'settings.js'),'utf8');
 function setup(store={}) {
-  const context=vm.createContext({browser:{storage:{local:{get:async()=>store,set:async data=>{Object.assign(store,structuredClone(data));}}}}});
+  const context=vm.createContext({TextEncoder,browser:{storage:{local:{get:async()=>store,set:async data=>{Object.assign(store,structuredClone(data));}}}}});
+  vm.runInContext(fs.readFileSync(path.join(root,'filenames.js'),'utf8'),context);
   vm.runInContext(source,context);return context.XFDSettings;
 }
 test('settings persist across new contexts, and invalid/missing values get safe defaults',async()=>{
@@ -38,7 +39,7 @@ test('all frame rates preserve duration within GIF timing precision',()=>{
 test('options page and script labels are available in both languages',()=>{
   const html=fs.readFileSync(path.join(root,'options.html'),'utf8');
   const js=fs.readFileSync(path.join(root,'options.js'),'utf8');
-  const keys=[...html.matchAll(/data-i18n(?:-aria)?="([A-Za-z]+)"/g),...js.matchAll(/(?:t|message)\("([A-Za-z]+)"/g)].map(m=>m[1]);
+  const keys=[...html.matchAll(/data-i18n(?:-aria)?="([A-Za-z]+)"/g),...js.matchAll(/\b(?:t|message)\("([A-Za-z]+)"/g)].map(m=>m[1]);
   for(const locale of ['en','ru']) {
     const messages=JSON.parse(fs.readFileSync(path.join(root,'_locales',locale,'messages.json'),'utf8'));
     for(const key of keys)assert.ok(messages[key]?.message,`${locale}: ${key}`);

@@ -160,7 +160,7 @@
     "message": "Вернуть исходные"
   },
   "settingsFooter": {
-    "message": "Настройки хранятся в этом профиле Firefox. Сохранённые изменения применяются к следующему скачиванию."
+    "message": "Настройки сохраняются в этом профиле Firefox."
   },
   "settingsUnsaved": {
     "message": "Есть несохранённые изменения."
@@ -179,5 +179,187 @@
   },
   "downloadCancelled": {
     "message": "Скачивание отменено: вкладка или расширение были закрыты."
+  },
+  "settingsHeadline": {
+    "message": "Загрузка по вашим правилам."
+  },
+  "settingsIntro": {
+    "message": "Выберите качество и удобные имена файлов. Скачивайте прямо из ленты."
+  },
+  "settingsSections": {
+    "message": "Разделы настроек"
+  },
+  "videoTab": {
+    "message": "Видео"
+  },
+  "gifTab": {
+    "message": "GIF"
+  },
+  "filesTab": {
+    "message": "Файлы и имена"
+  },
+  "videoQualityTitle": {
+    "message": "Выберите качество видео"
+  },
+  "videoQualityIntro": {
+    "message": "Больше деталей или меньше размер файла? Видео сохраняются в MP4."
+  },
+  "videoPresets": {
+    "message": "Готовые настройки видео"
+  },
+  "gifPresets": {
+    "message": "Готовые настройки GIF"
+  },
+  "presetBest": {
+    "message": "Высокое качество"
+  },
+  "presetBalanced": {
+    "message": "Баланс"
+  },
+  "presetCompact": {
+    "message": "Маленький файл"
+  },
+  "videoBestHint": {
+    "message": "Максимум доступных деталей"
+  },
+  "videoBalancedHint": {
+    "message": "До 720p"
+  },
+  "videoCompactHint": {
+    "message": "Минимальный доступный битрейт"
+  },
+  "videoQualityLabel": {
+    "message": "Качество видео"
+  },
+  "qualityBest": {
+    "message": "Лучшее доступное"
+  },
+  "qualitySmallest": {
+    "message": "Самый маленький вариант"
+  },
+  "videoQualityHelp": {
+    "message": "Скачивается готовый MP4 с серверов X. Если нужного разрешения нет, выбирается ближайшее меньшее; если все больше — минимальное. Если разрешения неизвестны, используется лучшее качество."
+  },
+  "videoSoundNote": {
+    "message": "Выбранный MP4 сохраняется с его звуком, длительностью и частотой кадров."
+  },
+  "gifQualityTitle": {
+    "message": "Уменьшите GIF одним нажатием."
+  },
+  "gifQualityIntro": {
+    "message": "Начните с готового варианта. При желании настройте детали."
+  },
+  "gifQualityHint": {
+    "message": "100% · 20 кадр/с · 256 цветов"
+  },
+  "gifBalancedHint": {
+    "message": "50% · 15 кадр/с · 128 цветов"
+  },
+  "gifCompactHint": {
+    "message": "25% · 10 кадр/с · 64 цвета"
+  },
+  "fineTuneGif": {
+    "message": "Настроить плавность и цвета"
+  },
+  "filesTitle": {
+    "message": "Узнавайте файлы по имени."
+  },
+  "filesIntro": {
+    "message": "Выберите готовый вариант имени или создайте свой с помощью тегов."
+  },
+  "namePresets": {
+    "message": "Готовые имена файлов"
+  },
+  "nameClassic": {
+    "message": "Простое"
+  },
+  "nameAuthor": {
+    "message": "Автор + пост"
+  },
+  "nameDate": {
+    "message": "Дата + автор"
+  },
+  "videoNameLabel": {
+    "message": "Имя видео"
+  },
+  "gifNameLabel": {
+    "message": "Имя GIF"
+  },
+  "nameHelp": {
+    "message": "Расширение .mp4 или .gif добавится автоматически. Нажмите на тег, чтобы вставить его в выбранное поле."
+  },
+  "availableTags": {
+    "message": "Теги для имени файла"
+  },
+  "filenamePreview": {
+    "message": "Предпросмотр имени"
+  },
+  "previewSampleNote": {
+    "message": "Пример: пост от @alex за 20 сентября 2026 года."
+  },
+  "filenameSafety": {
+    "message": "Недопустимые символы заменяются автоматически. Существующие файлы не перезаписываются."
+  },
+  "tagReference": {
+    "message": "Что означают теги"
+  },
+  "tagMissingNote": {
+    "message": "Если автор, дата или разрешение неизвестны, подставляется «unknown», вместо отсутствующего текста — ID поста. Даты указаны по UTC. Для репостов и цитат используются данные исходного поста с медиа."
+  },
+  "folderLabel": {
+    "message": "Подпапка (необязательно)"
+  },
+  "folderHelp": {
+    "message": "Одна подпапка внутри папки загрузок Firefox. Оставьте пустым, чтобы сохранять без подпапки. В диалоге сохранения можно выбрать другое место."
+  },
+  "applyNext": {
+    "message": "Изменения применятся к следующей загрузке."
+  },
+  "settingsReady": {
+    "message": "Текущие настройки"
+  },
+  "nameTemplateInvalid": {
+    "message": "Введите шаблон имени длиной до 180 символов."
+  },
+  "nameTagInvalid": {
+    "message": "Неизвестный или незакрытый тег. Используйте теги из списка ниже."
+  },
+  "previewInvalid": {
+    "message": "Проверьте шаблон имени"
+  },
+  "samplePostText": {
+    "message": "День у моря"
+  },
+  "tagAuthor": {
+    "message": "Имя автора без @"
+  },
+  "tagId": {
+    "message": "ID исходного поста"
+  },
+  "tagDate": {
+    "message": "Дата поста, ГГГГ-ММ-ДД (UTC)"
+  },
+  "tagDownloadDate": {
+    "message": "Дата загрузки, ГГГГ-ММ-ДД (UTC)"
+  },
+  "tagText": {
+    "message": "Первые 80 символов текста поста"
+  },
+  "tagIndex": {
+    "message": "Номер медиа в посте, начиная с 1"
+  },
+  "tagType": {
+    "message": "video или gif"
+  },
+  "tagResolution": {
+    "message": "Ширина и высота результата, например 640x360"
+  },
+  "tagTarget": {
+    "message": "Теги вставляются в поле: $FIELD$",
+    "placeholders": {
+      "field": {
+        "content": "$1"
+      }
+    }
   }
 }

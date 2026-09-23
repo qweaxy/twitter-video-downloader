@@ -160,7 +160,7 @@
     "message": "Reset to defaults"
   },
   "settingsFooter": {
-    "message": "Settings stay in this Firefox profile. Saved changes apply to the next download."
+    "message": "Settings stay in this Firefox profile."
   },
   "settingsUnsaved": {
     "message": "Unsaved changes."
@@ -179,5 +179,187 @@
   },
   "downloadCancelled": {
     "message": "Download cancelled because the tab or extension was closed."
+  },
+  "settingsHeadline": {
+    "message": "Downloads, your way."
+  },
+  "settingsIntro": {
+    "message": "Choose the quality, give files a useful name, and keep saving from your feed."
+  },
+  "settingsSections": {
+    "message": "Settings sections"
+  },
+  "videoTab": {
+    "message": "Video"
+  },
+  "gifTab": {
+    "message": "GIF"
+  },
+  "filesTab": {
+    "message": "Files & names"
+  },
+  "videoQualityTitle": {
+    "message": "Choose your video quality"
+  },
+  "videoQualityIntro": {
+    "message": "Pick what matters most. Videos are saved as MP4."
+  },
+  "videoPresets": {
+    "message": "Video presets"
+  },
+  "gifPresets": {
+    "message": "GIF presets"
+  },
+  "presetBest": {
+    "message": "Best quality"
+  },
+  "presetBalanced": {
+    "message": "Balanced"
+  },
+  "presetCompact": {
+    "message": "Small file"
+  },
+  "videoBestHint": {
+    "message": "Most detail available"
+  },
+  "videoBalancedHint": {
+    "message": "Up to 720p"
+  },
+  "videoCompactHint": {
+    "message": "Lowest available bitrate"
+  },
+  "videoQualityLabel": {
+    "message": "Video quality"
+  },
+  "qualityBest": {
+    "message": "Best available"
+  },
+  "qualitySmallest": {
+    "message": "Smallest available"
+  },
+  "videoQualityHelp": {
+    "message": "Uses an MP4 offered by X, without re-encoding. If your chosen size is unavailable, the closest lower size is used; if all are larger, the smallest is used. Unknown sizes use the best available variant."
+  },
+  "videoSoundNote": {
+    "message": "The selected MP4 is saved with its existing sound, duration and frame rate."
+  },
+  "gifQualityTitle": {
+    "message": "A lighter GIF, in one click."
+  },
+  "gifQualityIntro": {
+    "message": "Start with a preset, then fine-tune if you want."
+  },
+  "gifQualityHint": {
+    "message": "100% · 20 fps · 256 colors"
+  },
+  "gifBalancedHint": {
+    "message": "50% · 15 fps · 128 colors"
+  },
+  "gifCompactHint": {
+    "message": "25% · 10 fps · 64 colors"
+  },
+  "fineTuneGif": {
+    "message": "Fine-tune motion and colors"
+  },
+  "filesTitle": {
+    "message": "Recognize your files at a glance."
+  },
+  "filesIntro": {
+    "message": "Use a ready-made name or create your own with tags."
+  },
+  "namePresets": {
+    "message": "Filename presets"
+  },
+  "nameClassic": {
+    "message": "Simple"
+  },
+  "nameAuthor": {
+    "message": "Author + post"
+  },
+  "nameDate": {
+    "message": "Date + author"
+  },
+  "videoNameLabel": {
+    "message": "Video filename"
+  },
+  "gifNameLabel": {
+    "message": "GIF filename"
+  },
+  "nameHelp": {
+    "message": "The extension adds .mp4 or .gif for you. Click a tag to insert it into the selected field."
+  },
+  "availableTags": {
+    "message": "Available filename tags"
+  },
+  "filenamePreview": {
+    "message": "Filename preview"
+  },
+  "previewSampleNote": {
+    "message": "Example post by @alex, dated 2026-09-20."
+  },
+  "filenameSafety": {
+    "message": "Unsupported filename characters are replaced automatically. Existing files are never overwritten."
+  },
+  "tagReference": {
+    "message": "What each tag means"
+  },
+  "tagMissingNote": {
+    "message": "Missing author, date or resolution becomes “unknown”. Missing text uses the post ID. Dates use UTC. For reposts and quotes, tags describe the source post containing the media."
+  },
+  "folderLabel": {
+    "message": "Subfolder (optional)"
+  },
+  "folderHelp": {
+    "message": "One folder inside your default download folder. Leave blank to save directly there. The save dialog can override this."
+  },
+  "applyNext": {
+    "message": "Changes apply to the next download."
+  },
+  "settingsReady": {
+    "message": "Your current settings"
+  },
+  "nameTemplateInvalid": {
+    "message": "Enter a filename template, up to 180 characters."
+  },
+  "nameTagInvalid": {
+    "message": "Unknown or incomplete tag. Use the tags shown below."
+  },
+  "previewInvalid": {
+    "message": "Check the filename template"
+  },
+  "samplePostText": {
+    "message": "An afternoon by the sea"
+  },
+  "tagAuthor": {
+    "message": "Author’s username, without @"
+  },
+  "tagId": {
+    "message": "Source post ID"
+  },
+  "tagDate": {
+    "message": "Post date, YYYY-MM-DD (UTC)"
+  },
+  "tagDownloadDate": {
+    "message": "Download date, YYYY-MM-DD (UTC)"
+  },
+  "tagText": {
+    "message": "First 80 characters of the post"
+  },
+  "tagIndex": {
+    "message": "Media number in the post, starting at 1"
+  },
+  "tagType": {
+    "message": "video or gif"
+  },
+  "tagResolution": {
+    "message": "Output width × height, e.g. 640x360"
+  },
+  "tagTarget": {
+    "message": "Editing: $FIELD$",
+    "placeholders": {
+      "field": {
+        "content": "$1"
+      }
+    }
   }
 }
