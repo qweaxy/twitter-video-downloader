@@ -3,22 +3,15 @@
   const t = (key, substitutions) => browser.i18n.getMessage(key, substitutions);
   let scanTimer = null, scanning = false, scanAgain = false, disposed = false;
   let panel, panelOwner, toastTimer;
-  const articleSelector = 'article[data-testid="tweet"]';
-  function postId(article) {
-     
-    for (const time of article.querySelectorAll("time")) {
-      const a = time.closest('a[href*="/status/"]');
-      if (a) {
-        const match = new URL(a.href).pathname.match(/\/status\/(\d+)/);
-        if (match) return match[1];
-      }
+  const articleSelector = TVDPost.articleSelector;
+  const postId = article => TVDPost.postId(article);
+  let lookupFailures = 0, retryAfter = 0;
+  async function lookup(article,id) {
+    let kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
+    if (!kinds?.[id]?.length && globalThis.TVDVisibleMedia) {
+      if (await TVDVisibleMedia.remember(article,id)) kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
     }
-     
-    for (const a of article.querySelectorAll('a[href*="/status/"]')) {
-      const match = new URL(a.href).pathname.match(/\/status\/(\d+)$/);
-      if (match) return match[1];
-    }
-    return null;
+    return kinds?.[id] || [];
   }
   function notify(text) {
     if (disposed || !document.body) return;
@@ -56,7 +49,6 @@
       : matchMedia("(prefers-color-scheme: dark)").matches;
     panel.dataset.theme = dark ? "dark" : "light";
     panel.style.setProperty("--xfd-menu-bg",background?.color || (dark ? "#000" : "#fff"));
-    panel.style.fontFamily = getComputedStyle(button.closest(articleSelector)).fontFamily;
   }
   async function download(button, id, index, format) {
     closePanel();
@@ -98,7 +90,8 @@
     panel.firstElementChild.focus();
   }
   function formatMenu(button, id, types, index) {
-    const formats = types[index] === "gif" ? ["gif","mp4"] : ["mp4","gif"];
+    if (types[index] === "gif") { download(button,id,index,"gif"); return; }
+    const formats = ["mp4","gif"];
     const choices = formats.map(format => ({
       label:t(format === "mp4" ? "downloadAsMp4" : "downloadAsGif"),
       action:() => download(button,id,index,format)
@@ -110,7 +103,7 @@
     if (types.length === 1) { formatMenu(button,id,types,0); return; }
     showMenu(button,id,types.map((type,index) => ({
       label:t(type === "gif" ? "downloadGifNumber" : "downloadVideoNumber",String(index+1)),
-      submenu:true,action:() => formatMenu(button,id,types,index)
+      submenu:type !== "gif",action:() => formatMenu(button,id,types,index)
     })),t("chooseVideo"));
   }
   async function clicked(event) {
@@ -121,9 +114,8 @@
     const id = postId(button.closest(articleSelector));
     if (!id) return;
     try {
-      const kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
+      const types = await lookup(button.closest(articleSelector),id);
       if (disposed || !button.isConnected || postId(button.closest(articleSelector)) !== id) return;
-      const types = kinds?.[id] || [];
       if (!types.length) { notify(t("linkMissing")); return; }
       mediaMenu(button,id,types);
     } catch { notify(t("reloadPage")); }
@@ -185,20 +177,36 @@
     if (disposed) return;
     scanning = true;
     try {
-    const articles = [...document.querySelectorAll(articleSelector)];
-    const entries = articles.map(article => [article, postId(article)]).filter(([, id]) => id);
-    let counts = {};
-    try {
-      for (let i = 0; i < entries.length; i += 100) {
-        Object.assign(counts, await browser.runtime.sendMessage({type: "xfd:lookup", ids: entries.slice(i, i + 100).map(([, id]) => id)}));
+      const articles = [...document.querySelectorAll(articleSelector)];
+      const entries = articles.map(article => [article,postId(article)]).filter(([,id]) => id);
+      for (const [article] of entries) {
+        if (article.querySelector('video, [data-testid="videoPlayer"]') && !article.querySelector(".xfd-button")) addButton(article,[]);
       }
-    } catch { suspend(); return; }
-    if (disposed) return;
-    for (const [article, id] of entries) {
-      if (!article.isConnected || postId(article) !== id) continue;
-      if (counts[id]?.length || article.querySelector('video, [data-testid="videoPlayer"]')) addButton(article,counts[id] || []);
-      else removeButton(article);
-    }
+      const counts = {};
+      try {
+        for (let i=0;i<entries.length;i+=100) {
+          const result = await browser.runtime.sendMessage({type:"xfd:lookup",ids:entries.slice(i,i+100).map(([,id]) => id)});
+          if (!result || result.ok === false) throw new Error("lookupFailed");
+          Object.assign(counts,result);
+        }
+        if (globalThis.TVDVisibleMedia) {
+          for (const [article,id] of entries) {
+            if (disposed) return;
+            if (!counts[id]?.length && await TVDVisibleMedia.remember(article,id)) counts[id] = await lookup(article,id);
+          }
+        }
+        lookupFailures = 0; retryAfter = 0;
+      } catch {
+        lookupFailures++;
+        retryAfter = Date.now()+Math.min(30000,500*2**Math.min(lookupFailures-1,6));
+        scanAgain = true;
+      }
+      if (disposed) return;
+      for (const [article,id] of entries) {
+        if (!article.isConnected || postId(article) !== id) continue;
+        if (counts[id]?.length || article.querySelector('video, [data-testid="videoPlayer"]')) addButton(article,counts[id] || []);
+        else removeButton(article);
+      }
     } finally {
       scanning = false;
       if (scanAgain && !disposed) { scanAgain = false; schedule(); }
@@ -209,12 +217,12 @@
     if (scanning) { scanAgain = true; return; }
     if (scanTimer === null) scanTimer = setTimeout(() => {
       scanTimer = null; scan().catch(() => {});
-    },120);
+    },Math.max(120,retryAfter-Date.now()));
   }
   const observer = new MutationObserver(schedule);
   browser.runtime.onMessage.addListener(message => {
     if (disposed) return;
-    if (message.type === "xfd:updated") schedule();
+    if (message.type === "xfd:updated") { retryAfter = 0; schedule(); }
     if (message.type === "tvd:error") notify(message.error || t("gifFailed"));
     if (message.type === "xfd:converting") notify(t("gifConverting",String(message.percent)));
     if (message.type === "xfd:finished") notify(t(message.ok ? (message.kind === "gif" ? "gifSaved" : "videoSaved") : "downloadInterrupted"));
@@ -236,6 +244,9 @@
   });
   document.addEventListener("scroll", e => { if (panel && !panel.contains(e.target)) closePanel(); }, true);
   window.addEventListener("resize", schedule, {passive: true});
+  document.addEventListener("loadedmetadata",schedule,true);
+  document.addEventListener("loadeddata",schedule,true);
+  window.addEventListener("popstate",schedule);
    
   const themeObserver = new MutationObserver(schedule);
   function observeBodyTheme() {
@@ -247,8 +258,8 @@
     document.querySelector(".xfd-toast")?.remove();
   }
   function resume() {
-    disposed = false;
-    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["href","data-testid"]});
+    disposed = false; retryAfter = 0;
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["href","src","poster","data-testid"]});
     themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:["class","style","data-theme"]});
     observeBodyTheme(); schedule();
   }

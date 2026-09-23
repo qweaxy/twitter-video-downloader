@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Twitter Video Downloader",
-  "version": "0.6.0",
+  "version": "0.6.2",
   "minimum_chrome_version": "116",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
@@ -43,6 +43,7 @@
       "js": [
         "compat.js",
         "bridge.js",
+        "post-context.js",
         "content.js"
       ],
       "css": [

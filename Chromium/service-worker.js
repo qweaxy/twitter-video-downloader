@@ -64,6 +64,7 @@ async function remember(message,sender) {
     for (const pair of message.entries.slice(0,100)) {
       if (!Array.isArray(pair) || typeof pair[0] !== "string" || !/^\d{1,30}$/.test(pair[0])) continue;
       const [id,raw] = pair, items = cleanItems(raw,id); if (!items.length) continue;
+      if (message.type === "tvd:visible-media" && s.posts.some(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)) continue;
       s.posts = s.posts.filter(p => !(p.tabId === sender.tab.id && p.id === id));
       s.posts.push({tabId:sender.tab.id,documentId:sender.documentId,id,items});
     }
@@ -96,7 +97,7 @@ async function requestDownload(message,sender) {
   let item = post?.items[index]; if (!item) return {ok:false,error:t("linkMissing")};
   let settings;
   try { settings = await XFDSettings.load(); } catch { return {ok:false,error:t("settingsLoadFailed")}; }
-  if (message.format !== undefined && !["mp4","gif"].includes(message.format)) return {ok:false,error:t("variantUnavailable")};
+  if ((message.format !== undefined && !["mp4","gif"].includes(message.format)) || (item.type === "gif" && message.format === "mp4")) return {ok:false,error:t("variantUnavailable")};
   item = {...item,type:message.format === "gif" ? "gif" : message.format === "mp4" ? "video" : item.type};
   item = XFDMedia.selectVariant(item,item.type === "gif" ? "best" : settings.videoQuality);
   if (!item) return {ok:false,error:t("variantUnavailable")};
@@ -164,7 +165,7 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
   let task;
   if (message.target === "worker" && sender.id === chrome.runtime.id && !sender.tab && sender.url === chrome.runtime.getURL(OFFSCREEN)) task = handleOffscreen(message);
   else if (sourceSender(sender)) {
-    if (message.type === "tvd:metadata") task = remember(message,sender);
+    if (["tvd:metadata","tvd:visible-media"].includes(message.type)) task = remember(message,sender);
     else if (message.type === "xfd:lookup") task = stateQueue.then(() => {
       const ids = Array.isArray(message.ids) ? message.ids.slice(0,100).filter(id => typeof id === "string" && /^\d{1,30}$/.test(id)) : [];
       return Object.fromEntries(ids.map(id => [id,(state.posts.find(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)?.items || []).map(m => m.type)]));

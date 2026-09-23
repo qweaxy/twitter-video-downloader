@@ -3,6 +3,14 @@
   chrome.runtime.onMessage.addListener((message,sender,reply) => {
     if (message?.type === "tvd:ping" && sender.id === chrome.runtime.id) reply({ok:true});
   });
+  globalThis.TVDVisibleMedia = {
+    async remember(article,id) {
+      const items = TVDPost.visibleMedia(article,id);
+      if (!items.length) return false;
+      const reply = await chrome.runtime.sendMessage({type:"tvd:visible-media",entries:[[id,items]]});
+      return reply?.ok === true;
+    }
+  };
   let pending = [], timer = null, sending = false;
   async function flush() {
     timer = null;
