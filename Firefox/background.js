@@ -68,7 +68,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     try { settings = await XFDSettings.load(); }
     catch { return {ok:false,error:t("settingsLoadFailed")}; }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
-    if (message.format !== undefined && !["mp4","gif"].includes(message.format)) return {ok:false,error:t("variantUnavailable")};
+    if ((message.format !== undefined && !["mp4","gif"].includes(message.format)) || (item.type === "gif" && message.format === "mp4")) return {ok:false,error:t("variantUnavailable")};
     item = {...item,type:message.format === "gif" ? "gif" : message.format === "mp4" ? "video" : item.type};
     item = XFDMedia.selectVariant(item,item.type === "gif" ? "best" : settings.videoQuality);
     if (!item) return {ok:false,error:t("variantUnavailable")};

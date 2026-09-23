@@ -56,7 +56,6 @@
       : matchMedia("(prefers-color-scheme: dark)").matches;
     panel.dataset.theme = dark ? "dark" : "light";
     panel.style.setProperty("--xfd-menu-bg",background?.color || (dark ? "#000" : "#fff"));
-    panel.style.fontFamily = getComputedStyle(button.closest(articleSelector)).fontFamily;
   }
   async function download(button, id, index, format) {
     closePanel();
@@ -98,7 +97,8 @@
     panel.firstElementChild.focus();
   }
   function formatMenu(button, id, types, index) {
-    const formats = types[index] === "gif" ? ["gif","mp4"] : ["mp4","gif"];
+    if (types[index] === "gif") { download(button,id,index,"gif"); return; }
+    const formats = ["mp4","gif"];
     const choices = formats.map(format => ({
       label:t(format === "mp4" ? "downloadAsMp4" : "downloadAsGif"),
       action:() => download(button,id,index,format)
@@ -110,7 +110,7 @@
     if (types.length === 1) { formatMenu(button,id,types,0); return; }
     showMenu(button,id,types.map((type,index) => ({
       label:t(type === "gif" ? "downloadGifNumber" : "downloadVideoNumber",String(index+1)),
-      submenu:true,action:() => formatMenu(button,id,types,index)
+      submenu:type !== "gif",action:() => formatMenu(button,id,types,index)
     })),t("chooseVideo"));
   }
   async function clicked(event) {

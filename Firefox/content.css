@@ -39,7 +39,7 @@
   text-align: start; cursor: pointer; transition: background-color 120ms;
 }
 .xfd-panel button svg { width: 20px; height: 20px; flex: 0 0 20px; pointer-events: none; }
-.xfd-panel button span { min-width: 0; overflow-wrap: anywhere; }
+.xfd-panel button span { font: inherit; min-width: 0; overflow-wrap: anywhere; }
 .xfd-panel button:hover, .xfd-panel button:focus-visible { background: rgba(231,233,234,.1); }
 .xfd-panel[data-theme="light"] button:hover, .xfd-panel[data-theme="light"] button:focus-visible { background: rgba(15,20,25,.05); }
 .xfd-panel button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: -2px; }
