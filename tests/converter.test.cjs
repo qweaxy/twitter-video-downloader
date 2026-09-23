@@ -5,11 +5,12 @@ const path=require('node:path');
 const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 
-function environment({duration=.15,size=4*4,fail=false}={}) {
+function environment({duration=.15,size=4*4,fail=false,hangWorker=false}={}) {
   const seeks=[],revoked=[],progress=[],workers=[],draws=[],blobs=new Map();
   let frame=0;
   const video=new EventTarget();
   Object.assign(video,{duration,videoWidth:4,videoHeight:size/4,muted:false,preload:'',playsInline:false,
+    pause(){this.paused=true;},
     load(){if(this.src)queueMicrotask(()=>this.dispatchEvent(new Event('loadeddata')));},
     removeAttribute(){this.src='';}});
   Object.defineProperty(video,'currentTime',{set(value){seeks.push(value);frame++;queueMicrotask(()=>video.dispatchEvent(new Event('seeked')));}});
@@ -22,7 +23,7 @@ function environment({duration=.15,size=4*4,fail=false}={}) {
       vm.runInContext(fs.readFileSync(path.join(root,'gif-worker.js'),'utf8'),context);
       this.self=self;
     }
-    postMessage(data){queueMicrotask(()=>this.self.onmessage({data}));}
+    postMessage(data){if(!hangWorker)queueMicrotask(()=>this.self.onmessage({data}));}
     terminate(){this.terminated=true;}
   }
   const context=vm.createContext({
@@ -37,7 +38,7 @@ function environment({duration=.15,size=4*4,fail=false}={}) {
   });
   vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'gif-converter.js'),'utf8'),context);
-  return {convert:context.XFDGif.convert,seeks,revoked,progress,workers,draws};
+  return {convert:context.XFDGif.convert,seeks,revoked,progress,workers,draws,video};
 }
 
 test('converter seeks the full animation, uses real encoder worker and releases resources',async()=>{
@@ -66,5 +67,17 @@ test('network errors propagate; an aborted conversion stops before encoding',asy
   const e=environment({fail:true});await assert.rejects(e.convert('https://video.twimg.com/a.mp4',()=>{},new AbortController().signal));
   const cancelled=environment();const controller=new AbortController();controller.abort();
   await assert.rejects(cancelled.convert('https://video.twimg.com/a.mp4',()=>{},controller.signal));
-  assert.equal(cancelled.workers.length,0);assert.deepEqual(cancelled.revoked,['blob:0']);
+  assert.equal(cancelled.workers.length,0);assert.deepEqual(cancelled.revoked,[]);
+});
+test('abort terminates the worker and media decoder synchronously during pending work',async()=>{
+  const e=environment({hangWorker:true}),controller=new AbortController();
+  const pending=e.convert('https://video.twimg.com/a.mp4',()=>{},controller.signal);
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(e.workers.length,1);
+  controller.abort();
+  // Check before awaiting the rejected promise: unload cannot rely on that turn.
+  assert.equal(e.workers[0].terminated,true);assert.equal(e.video.paused,true);
+  assert.equal(e.video.src,'');assert.deepEqual(e.revoked,['blob:0']);
+  await assert.rejects(pending,/gifFailed/);
+  assert.deepEqual(e.revoked,['blob:0']);
 });

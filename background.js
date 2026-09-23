@@ -2,12 +2,15 @@
 const t = key => browser.i18n.getMessage(key);
 const tabMedia = new Map();
 const activeDownloads = new Map();
+const pendingDownloads = new Set();
 let gifJob = null;
-const MAX_RESPONSE = 12 * 1024 * 1024;
+let stopping = false;
 const MAX_POSTS = 600;
+const monitor = new XFDResponseMonitor(browser.webRequest,remember);
 browser.browserAction.onClicked.addListener(() => { browser.runtime.openOptionsPage().catch(() => {}); });
 
 function remember(tabId, json) {
+  if (stopping) return;
   const found = XFDMedia.extract(json);
   if (!found.size) return;
   let cache = tabMedia.get(tabId);
@@ -21,33 +24,11 @@ function remember(tabId, json) {
 }
 
 browser.webRequest.onBeforeRequest.addListener(details => {
-  if (details.tabId < 0) return;
+  if (stopping || details.tabId < 0) return;
   const path = new URL(details.url).pathname;
   // Only post/timeline operations, never direct-message responses.
   if (!/\/(?:i\/api\/)?graphql\/[^/]+\/(?:HomeTimeline|HomeLatestTimeline|TweetDetail|TweetResultByRestId|UserTweets|UserTweetsAndReplies|UserMedia|SearchTimeline|Bookmarks|Likes|ListLatestTweetsTimeline|CommunityTweetsTimeline)$/.test(path)) return;
-  let filter;
-  try { filter = browser.webRequest.filterResponseData(details.requestId); }
-  catch { return; }
-  const decoder = new TextDecoder();
-  let text = "", size = 0;
-  filter.ondata = event => {
-    // Forward original bytes immediately; parsing must never block the feed.
-    filter.write(event.data);
-    size += event.data.byteLength;
-    if (size > MAX_RESPONSE) {
-      text = "";
-      filter.disconnect();
-      return;
-    }
-    text += decoder.decode(event.data, {stream: true});
-  };
-  filter.onstop = () => {
-    filter.close();
-    try { remember(details.tabId, JSON.parse(text + decoder.decode())); }
-    catch { /* Non-JSON or unknown response: leave the page untouched. */ }
-    text = "";
-  };
-  filter.onerror = () => { text = ""; };
+  monitor.capture(details);
 }, {
   urls: ["https://x.com/*", "https://twitter.com/*", "https://api.x.com/*", "https://api.twitter.com/*"],
   types: ["xmlhttprequest"]
@@ -55,7 +36,8 @@ browser.webRequest.onBeforeRequest.addListener(details => {
 
 function clearTab(tabId) {
   tabMedia.delete(tabId);
-  if (gifJob?.tabId === tabId) gifJob.controller.abort();
+  monitor.clearTab(tabId);
+  for (const operation of pendingDownloads) if (operation.tabId === tabId) operation.controller.abort();
 }
 browser.tabs.onRemoved.addListener(clearTab);
 browser.tabs.onUpdated.addListener((tabId, change) => {
@@ -63,7 +45,7 @@ browser.tabs.onUpdated.addListener((tabId, change) => {
 });
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
-  if (!sender.tab || sender.frameId !== 0) return;
+  if (stopping || !sender.tab || sender.frameId !== 0) return;
   let host;
   try { host = new URL(sender.url).hostname; } catch { return; }
   if (!["x.com", "twitter.com"].includes(host)) return;
@@ -79,15 +61,19 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   const item = media[index];
   if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
   let objectURL = null, conversion = null, timeout = null;
-  let settings;
-  try { settings = await XFDSettings.load(); }
-  catch { return {ok:false,error:t("settingsLoadFailed")}; }
+  const operation = {tabId:sender.tab.id,controller:new AbortController(),timer:null};
+  pendingDownloads.add(operation);
   try {
+    let settings;
+    try { settings = await XFDSettings.load(); }
+    catch { return {ok:false,error:t("settingsLoadFailed")}; }
+    if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
     if (item.type === "gif") {
       if (gifJob) return {ok:false,error:t("gifBusy")};
-      conversion = {tabId:sender.tab.id,controller:new AbortController()};
+      conversion = operation;
       gifJob = conversion;
       timeout = setTimeout(() => conversion.controller.abort(),10 * 60 * 1000);
+      conversion.timer = timeout;
       let lastProgress = -1;
       const progress = percent => {
         const step = Math.floor(percent / 5) * 5;
@@ -100,11 +86,13 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       if (conversion.controller.signal.aborted) throw new Error("gifFailed");
       objectURL = URL.createObjectURL(blob);
     }
+    if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
     const id = await browser.downloads.download({
       url: objectURL || item.url, filename: `X_${message.id}_${index + 1}.${item.type === "gif" ? "gif" : "mp4"}`,
       conflictAction: "uniquify", incognito: !!sender.tab.incognito,
       ...(settings.saveLocation === "browser" ? {} : {saveAs:settings.saveLocation === "ask"})
     });
+    if (stopping) return {ok:false,error:t("downloadCancelled")};
     activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id, objectURL, kind:item.type});
     objectURL = null; // Owned by the download until completion/interruption.
     // Small blob downloads can finish before download() resolves.
@@ -119,6 +107,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     if (objectURL) URL.revokeObjectURL(objectURL);
     if (timeout) clearTimeout(timeout);
     if (conversion && gifJob === conversion) gifJob = null;
+    pendingDownloads.delete(operation);
   }
 });
 
@@ -132,3 +121,24 @@ function finishDownload(delta) {
   }).catch(() => {});
 }
 browser.downloads.onChanged.addListener(finishDownload);
+browser.downloads.onErased.addListener(id => {
+  const item = activeDownloads.get(id);
+  if (item?.objectURL) URL.revokeObjectURL(item.objectURL);
+  activeDownloads.delete(id);
+});
+
+function shutdown() {
+  if (stopping) return;
+  stopping = true;
+  monitor.stop();
+  for (const operation of pendingDownloads) {
+    clearTimeout(operation.timer);
+    operation.controller.abort();
+  }
+  pendingDownloads.clear(); gifJob = null;
+  for (const item of activeDownloads.values()) if (item.objectURL) URL.revokeObjectURL(item.objectURL);
+  activeDownloads.clear(); tabMedia.clear();
+}
+// Best-effort synchronous cleanup; no network calls or awaited work during unload.
+globalThis.addEventListener("pagehide",shutdown);
+globalThis.addEventListener("unload",shutdown);

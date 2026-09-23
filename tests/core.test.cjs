@@ -25,10 +25,12 @@ function env(locale = 'en', preferences) {
     }},
     tabs:{onRemoved:event('removed'),onUpdated:event('updated'),sendMessage:async (id,msg)=>{messages.push([id,msg]);}},
     runtime:{onMessage:event('message'),openOptionsPage:async()=>{messages.push(['options']);}},
-    downloads:{download:async opts=>{downloads.push(opts);return 10;},search:async()=>[{state:'in_progress'}],onChanged:event('downloadChanged')}
+    downloads:{download:async opts=>{downloads.push(opts);return 10;},search:async()=>[{state:'in_progress'}],onChanged:event('downloadChanged'),onErased:event('downloadErased')}
   };
-  const ctx=vm.createContext({URL,TextDecoder,browser,AbortController,Blob,setTimeout,clearTimeout});
+  const ctx=vm.createContext({URL,TextDecoder,browser,AbortController,Blob,setTimeout,clearTimeout,
+    addEventListener:(name,fn)=>{callbacks[name]=fn;}});
   vm.runInContext(fs.readFileSync(path.join(root,'settings.js'),'utf8'),ctx);
+  vm.runInContext(fs.readFileSync(path.join(root,'response-monitor.js'),'utf8'),ctx);
   vm.runInContext(mediaSource,ctx);vm.runInContext(bgSource,ctx);
   return {ctx,callbacks,filters,downloads,messages,browser};
 }
@@ -46,6 +48,35 @@ test('chooses the highest bitrate MP4, ignores HLS and untrusted hosts',()=>{
   ])});
   assert.equal(got.get('100')[0].url,high);
   for(const u of ['http://video.twimg.com/a.mp4','https://video.twimg.com.evil.example/a.mp4','https://x@video.twimg.com/a.mp4','https://video.twimg.com:88/a.mp4','https://video.twimg.com/a.m3u8']) assert.equal(e.ctx.XFDMedia.mp4URL(u),null);
+});
+test('closing a tab while settings load prevents a new conversion or download',async()=>{
+  const e=env();capture(e,tweet('700',[media(low)]));
+  let resolve;e.browser.storage.local.get=()=>new Promise(done=>{resolve=done;});
+  const pending=e.callbacks.message({type:'xfd:download',id:'700'},sender);
+  e.callbacks.removed(1);resolve({settings:{}});
+  assert.equal((await pending).ok,false);assert.equal(e.downloads.length,0);
+});
+test('background shutdown detaches streams, cancels conversion and refuses new work',async()=>{
+  const e=env();const post=tweet('701',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  let signal;
+  e.ctx.XFDGif={convert:async(url,progress,s)=>{signal=s;return new Promise((resolve,reject)=>s.addEventListener('abort',()=>reject(new Error('gifFailed'))));}};
+  const pending=e.callbacks.message({type:'xfd:download',id:'701'},sender);
+  await new Promise(resolve=>setImmediate(resolve));
+  e.callbacks.request({url:'https://x.com/i/api/graphql/hash/HomeTimeline',tabId:1,requestId:'late'});
+  const stream=e.filters.at(-1);stream.onstart();
+  e.callbacks.pagehide();e.callbacks.unload();
+  assert.equal(signal.aborted,true);assert.equal(stream.disconnected,true);
+  assert.equal((await pending).ok,false);assert.equal(e.downloads.length,0);
+  const count=e.filters.length;
+  e.callbacks.request({url:'https://x.com/i/api/graphql/hash/HomeTimeline',tabId:1,requestId:'new'});
+  assert.equal(e.filters.length,count);
+});
+test('erasing a download releases its GIF blob immediately',async()=>{
+  const e=env();const post=tweet('702',[media(low)]);post.legacy.extended_entities.media[0].type='animated_gif';capture(e,post);
+  e.ctx.XFDGif={convert:async()=>new Blob(['GIF89a'],{type:'image/gif'})};
+  await e.callbacks.message({type:'xfd:download',id:'702'},sender);
+  e.callbacks.downloadErased(10);
+  await assert.rejects(fetch(e.downloads[0].url));
 });
 test('quotes, retweets, multiple videos and GIFs stay attached to the correct post',()=>{
   const e=env();const child=tweet('200',[media(low)]);

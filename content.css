@@ -1,7 +1,11 @@
-.xfd-anchor { position: relative !important; }
+.xfd-slot {
+  all: unset; box-sizing: border-box; display: block; position: relative;
+  flex: 0 0 36px; width: 36px; min-width: 36px; height: 0; min-height: 0;
+  align-self: center; overflow: visible;
+}
 .xfd-button {
   all: unset; box-sizing: border-box; display: inline-flex; position: absolute;
-  transform: translateY(-50%);
+  inset-inline-start: 0; top: 0; transform: translateY(-50%);
   align-items: center; justify-content: center; width: 32px; height: 32px;
   border-radius: 999px; color: inherit; cursor: pointer;
   transition: background-color 120ms;
@@ -10,15 +14,35 @@
 .xfd-button:hover { color: #1d9bf0 !important; background: rgba(29,155,240,.1); }
 .xfd-button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 1px; }
 .xfd-button:disabled { opacity: .45; cursor: progress; }
-.xfd-panel, .xfd-toast {
+.xfd-toast {
   position: fixed; z-index: 2147483647; font: 14px/1.45 system-ui,sans-serif;
   color: #e7e9ea; background: #16181c; border: 1px solid #536471;
   border-radius: 12px; box-shadow: 0 4px 24px #0005;
 }
-.xfd-panel { padding: 6px; width: 216px; }
-.xfd-panel button { display: block; width: 100%; border: 0; padding: 11px 12px;
-  background: transparent; color: inherit; text-align: left; cursor: pointer; border-radius: 7px; font: inherit; }
-.xfd-panel button:hover, .xfd-panel button:focus-visible { background: #1d9bf026; }
+.xfd-panel {
+  position: fixed; z-index: 2147483647; box-sizing: border-box;
+  width: max-content; min-width: 180px; max-width: calc(100vw - 16px);
+  max-height: calc(100vh - 16px); overflow: auto;
+  padding: 0; border: 0; border-radius: 12px;
+  background: var(--xfd-menu-bg, #000); color: #e7e9ea;
+  box-shadow: 0 0 15px rgba(255,255,255,.2), 0 0 3px 1px rgba(255,255,255,.15);
+  font: 15px/20px system-ui,sans-serif;
+}
+.xfd-panel[data-theme="light"] {
+  color: #0f1419;
+  box-shadow: 0 0 15px rgba(101,119,134,.2), 0 0 3px 1px rgba(101,119,134,.15);
+}
+.xfd-panel button {
+  all: unset; box-sizing: border-box; display: flex; align-items: center;
+  gap: 12px; width: 100%; min-height: 44px; padding: 12px 16px;
+  color: inherit; background: transparent; font: inherit; font-weight: 700;
+  text-align: start; cursor: pointer; transition: background-color 120ms;
+}
+.xfd-panel button svg { width: 20px; height: 20px; flex: 0 0 20px; pointer-events: none; }
+.xfd-panel button span { min-width: 0; overflow-wrap: anywhere; }
+.xfd-panel button:hover, .xfd-panel button:focus-visible { background: rgba(231,233,234,.1); }
+.xfd-panel[data-theme="light"] button:hover, .xfd-panel[data-theme="light"] button:focus-visible { background: rgba(15,20,25,.05); }
+.xfd-panel button:focus-visible { outline: 2px solid #1d9bf0; outline-offset: -2px; }
 .xfd-toast { bottom: 28px; left: 50%; transform: translateX(-50%); padding: 12px 18px;
   max-width: min(440px, calc(100vw - 40px)); }
 @media (prefers-reduced-motion: reduce) { .xfd-button { transition: none; } }

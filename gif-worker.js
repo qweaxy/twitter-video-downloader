@@ -7,9 +7,10 @@ self.onmessage = ({data}) => {
     else if (data.type === "frame") encoder.frame(new Uint8ClampedArray(data.rgba),data.delay);
     else if (data.type === "finish") {
       const bytes = encoder.finish();
+      encoder = null;
       self.postMessage({bytes:bytes.buffer},[bytes.buffer]);
       return;
     }
     self.postMessage({ok:true});
-  } catch (error) { self.postMessage({error:error.message}); }
+  } catch (error) { encoder = null; self.postMessage({error:error.message}); }
 };

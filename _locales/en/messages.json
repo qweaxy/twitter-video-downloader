@@ -176,5 +176,8 @@
   },
   "settingsSaveFailed": {
     "message": "Could not save settings. Your changes have not been applied."
+  },
+  "downloadCancelled": {
+    "message": "Download cancelled because the tab or extension was closed."
   }
 }

@@ -20,6 +20,7 @@ The button follows X’s visual style: a muted icon with a blue hover state. Dow
 - **Download from the feed.** Click the icon beside the post’s menu to start saving a video.
 - **Automatic MP4 selection.** The extension chooses the available MP4 variant with the highest reported bitrate.
 - **Multiple videos.** If a post has several downloadable videos, choose one from a compact menu.
+- **A menu that fits X.** The media picker follows the page theme, with icons and bold labels. Use arrow keys to move, Enter to select, and Escape to close it.
 - **Reposts and quotes.** Supports video metadata in reposts and quoted posts. If a quote has its own video, that video takes priority.
 - **Real GIF files.** Media marked as an animation by X is converted locally into an animated `.gif`. Ordinary videos remain `.mp4`.
 - **English and Russian.** Messages follow the Firefox interface language, with English as the fallback for other languages.
@@ -105,6 +106,8 @@ It temporarily keeps post IDs, media types, and video URLs/bitrates in memory, w
 
 For a temporary installation, replace the files in the extension folder, click **Reload** in `about:debugging`, and reload your X tabs. For a signed installation, install a signed newer version of the same extension.
 
+Closing a tab cancels its pending conversion and releases its response buffers. The extension also performs synchronous resource cleanup when its background page unloads. These measures do not establish the cause of a native Firefox crash; diagnosing one requires its crash report and Firefox/OS version.
+
 If a download fails, check Firefox’s downloads panel and reload the post to obtain fresh metadata. When reporting a problem, include your Firefox version, extension version, a post URL if it can be shared, and the error message.
 
 ### Development
@@ -114,7 +117,7 @@ The extension uses plain JavaScript, CSS, and Firefox WebExtensions APIs. No bui
 Run the core tests from the extension folder:
 
 ```sh
-node --test tests/core.test.cjs tests/settings.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs tests/response-monitor.test.cjs
 ```
 
 Conversion and encoder tests:
@@ -146,6 +149,7 @@ X Feed Download добавляет небольшую иконку скачив�
 - **Скачивание из ленты.** Нажми иконку рядом с меню поста, чтобы сохранить видео.
 - **Автоматический выбор MP4.** Расширение выбирает доступный MP4-вариант с наибольшим указанным битрейтом.
 - **Несколько видео.** Если в посте несколько доступных роликов, выбери нужный в небольшом меню.
+- **Меню в стиле X.** Выбор медиа подстраивается под тему страницы, с иконками и жирными подписями. Стрелки переключают пункты, Enter выбирает, Escape закрывает меню.
 - **Репосты и цитаты.** Поддерживаются метаданные видео из репостов и цитируемых постов. Если у цитаты есть собственное видео, приоритет отдаётся ему.
 - **Настоящие GIF-файлы.** Медиа, отмеченные X как анимации, локально преобразуются в анимированный `.gif`. Обычные видео сохраняются в `.mp4`.
 - **Русский и английский.** Язык сообщений определяется языком интерфейса Firefox. Для остальных языков используется английский.
@@ -231,6 +235,8 @@ X Feed Download добавляет небольшую иконку скачив�
 
 При временной установке замени файлы в папке расширения, нажми **«Перезагрузить»** в `about:debugging` и обнови вкладки X. Для подписанной установки используй подписанную новую версию того же дополнения.
 
+Закрытие вкладки отменяет её ожидающее преобразование и освобождает буферы ответов. При выгрузке фоновой страницы расширение также синхронно освобождает ресурсы. Эти меры сами по себе не устанавливают причину краша Firefox: для диагностики нужен отчёт о сбое и версии Firefox/ОС.
+
 Если скачивание не удалось, проверь панель загрузок Firefox и обнови пост, чтобы получить свежие метаданные. При сообщении о проблеме укажи версии Firefox и расширения, ссылку на пост, если ею можно поделиться, и текст ошибки.
 
 ### Разработка
@@ -240,7 +246,7 @@ X Feed Download добавляет небольшую иконку скачив�
 Основные тесты запускаются из папки расширения:
 
 ```sh
-node --test tests/core.test.cjs tests/settings.test.cjs
+node --test tests/core.test.cjs tests/settings.test.cjs tests/response-monitor.test.cjs
 ```
 
 Тесты преобразования и кодировщика:

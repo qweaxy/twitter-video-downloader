@@ -17,6 +17,7 @@
       const output = new Uint8Array(this.length); let offset = 0;
       for (const chunk of this.chunks) { output.set(chunk, offset); offset += chunk.length; }
       output.set(this.buffer.subarray(0, this.used), offset);
+      this.chunks = []; this.buffer = new Uint8Array(0); this.used = 0;
       return output;
     }
   }
