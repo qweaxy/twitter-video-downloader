@@ -373,5 +373,11 @@
   },
   "backToMedia": {
     "message": "Back to media"
+  },
+  "gifSaving": {
+    "message": "GIF is ready. Waiting for the browser to save the file…"
+  },
+  "saveCancelled": {
+    "message": "Saving cancelled."
   }
 }

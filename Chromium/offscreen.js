@@ -14,6 +14,7 @@
         if (step !== previous) { previous = step; send({type:"tvd:progress",jobId:id,percent:step}).then(reply => { if (!reply?.ok) controller.abort(); },() => controller.abort()); }
       },controller.signal,request.settings);
       if (controller.signal.aborted) throw new Error("gifFailed");
+      clearTimeout(timeout);
       const url = URL.createObjectURL(blob); blobs.set(id,url);
       const reply = await send({type:"tvd:ready",jobId:id,url});
       if (!reply?.ok) release(id);

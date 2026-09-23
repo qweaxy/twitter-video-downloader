@@ -224,8 +224,9 @@
     if (disposed) return;
     if (message.type === "xfd:updated") { retryAfter = 0; schedule(); }
     if (message.type === "tvd:error") notify(message.error || t("gifFailed"));
+    if (message.type === "xfd:saving") notify(t("gifSaving"));
     if (message.type === "xfd:converting") notify(t("gifConverting",String(message.percent)));
-    if (message.type === "xfd:finished") notify(t(message.ok ? (message.kind === "gif" ? "gifSaved" : "videoSaved") : "downloadInterrupted"));
+    if (message.type === "xfd:finished") notify(t(message.ok ? (message.kind === "gif" ? "gifSaved" : "videoSaved") : (message.cancelled ? "saveCancelled" : "downloadInterrupted")));
   });
   document.addEventListener("pointerdown", e => {
     if (panel && !panel.contains(e.target) && !panelOwner?.contains(e.target)) closePanel();

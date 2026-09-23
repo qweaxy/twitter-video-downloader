@@ -1,5 +1,5 @@
 "use strict";
-importScripts("compat.js","filenames.js","settings.js","media.js");
+importScripts("compat.js","filenames.js","settings.js","media.js","download-status.js");
 const t = key => chrome.i18n.getMessage(key);
 const OFFSCREEN = "offscreen.html";
 let state = {posts:[],downloads:{},job:null}, offscreenQueue = Promise.resolve();
@@ -79,14 +79,15 @@ async function stillCurrent(job) {
   try { await chrome.tabs.sendMessage(job.tabId,{type:"tvd:ping"},{documentId:job.documentId}); return true; } catch { return false; }
 }
 async function saveDownload(url,job,jobId = null) {
+  if (job.kind === "gif") tell(job.tabId,{type:"xfd:saving",id:job.postId},job.documentId);
   const id = await chrome.downloads.download({url,filename:job.filename,conflictAction:"uniquify",
     ...(job.saveLocation === "browser" ? {} : {saveAs:job.saveLocation === "ask"})});
   await transaction(s => {
     s.downloads[id] = {tabId:job.tabId,documentId:job.documentId,postId:job.postId,kind:job.kind,jobId};
     if (jobId && s.job?.id === jobId) s.job = null;
   });
-  const items = await chrome.downloads.search({id});
-  if (items[0]?.state) await finishDownload({id,state:{current:items[0].state}});
+  const items = await chrome.downloads.search({id}).catch(() => []);
+  if (items[0]) await finishDownload({id},items[0]);
   return {ok:true};
 }
 async function requestDownload(message,sender) {
@@ -105,7 +106,7 @@ async function requestDownload(message,sender) {
     filename:XFDFilenames.build(settings,item,message.id,index),saveLocation:settings.saveLocation,started:Date.now()};
   if (!await stillCurrent(job)) return {ok:false,error:t("downloadCancelled")};
   if (item.type === "video") {
-    try { return await saveDownload(item.url,job); } catch { return {ok:false,error:t("downloadFailed")}; }
+    try { return await saveDownload(item.url,job); } catch (error) { return {ok:false,error:t(TVDDownloadStatus.cancelled(error) ? "saveCancelled" : "downloadFailed")}; }
   }
    
   await stateQueue;
@@ -154,9 +155,9 @@ async function handleOffscreen(message) {
       await stateQueue;
       if (state.job?.id !== job.id) throw new Error("closed");
       return await saveDownload(message.url,job,job.id);
-    } catch {
+    } catch (error) {
       await transaction(s => { if (s.job?.id === job.id) s.job = null; });
-      tell(job.tabId,{type:"tvd:error",error:t("downloadFailed")},job.documentId); return {ok:false};
+      tell(job.tabId,{type:"tvd:error",error:t(TVDDownloadStatus.cancelled(error) ? "saveCancelled" : "downloadFailed")},job.documentId); return {ok:false};
     }
   }
 }
@@ -184,23 +185,42 @@ async function clearTab(tabId) {
   if (job) await off({type:"tvd:cancel",jobId:job.id}).catch(() => {});
   closeIfIdle();
 }
-async function finishDownload(delta) {
-  if (!["complete","interrupted"].includes(delta.state?.current)) return;
-  const item = await transaction(s => { const item = s.downloads[delta.id]; delete s.downloads[delta.id]; return item; });
+async function finishDownload(delta, snapshot = null) {
+  if (!snapshot && !delta.state && !delta.error && !delta.paused) return;
+  await stateQueue;
+  const tracked = state.downloads[delta.id];
+  if (!tracked) return;
+  if (!snapshot && delta.state?.current === "complete") snapshot = {state:"complete"};
+  if (!snapshot) {
+    try { [snapshot] = await chrome.downloads.search({id:delta.id}); }
+    catch { return; }
+  }
+  const result = TVDDownloadStatus.outcome(snapshot);
+  if (!result) return;
+  const item = await transaction(s => {
+    if (s.downloads[delta.id] !== tracked) return null;
+    delete s.downloads[delta.id]; return tracked;
+  });
   if (!item) return;
   if (item.jobId) await off({type:"tvd:release",jobId:item.jobId}).catch(() => {});
-  tell(item.tabId,{type:"xfd:finished",id:item.postId,kind:item.kind,ok:delta.state.current === "complete"},item.documentId);
+  tell(item.tabId,{type:"xfd:finished",id:item.postId,kind:item.kind,ok:result === "complete",cancelled:result === "cancelled"},item.documentId);
+  closeIfIdle();
+}
+async function forgetDownload(id) {
+  const item = await transaction(s => { const item = s.downloads[id]; delete s.downloads[id]; return item; });
+  if (item?.jobId) await off({type:"tvd:release",jobId:item.jobId}).catch(() => {});
   closeIfIdle();
 }
 chrome.action.onClicked.addListener(() => { chrome.runtime.openOptionsPage().catch(() => {}); });
 chrome.tabs.onRemoved.addListener(id => { clearTab(id).catch(() => {}); });
 chrome.tabs.onUpdated.addListener((id,change) => { if (change.status === "loading") clearTab(id).catch(() => {}); });
 chrome.downloads.onChanged.addListener(delta => { finishDownload(delta).catch(() => {}); });
-chrome.downloads.onErased.addListener(id => { finishDownload({id,state:{current:"interrupted"}}).catch(() => {}); });
+chrome.downloads.onErased.addListener(id => { forgetDownload(id).catch(() => {}); });
  
 stateQueue.then(async () => {
   for (const id of Object.keys(state.downloads)) {
     const items = await chrome.downloads.search({id:Number(id)});
-    await finishDownload({id:Number(id),state:{current:items[0]?.state || "interrupted"}});
+    if (items[0]) await finishDownload({id:Number(id)},items[0]);
+    else await forgetDownload(Number(id));
   }
 }).catch(() => {});

@@ -88,9 +88,11 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       progress(0);
       const blob = await XFDGif.convert(item.url,progress,conversion.controller.signal,settings);
       if (conversion.controller.signal.aborted) throw new Error("gifFailed");
+      clearTimeout(timeout); timeout = null; conversion.timer = null;
       objectURL = URL.createObjectURL(blob);
     }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
+    if (item.type === "gif") browser.tabs.sendMessage(sender.tab.id,{type:"xfd:saving",id:message.id}).catch(() => {});
     const id = await browser.downloads.download({
       url: objectURL || item.url, filename: XFDFilenames.build(settings,item,message.id,index),
       conflictAction: "uniquify", incognito: !!sender.tab.incognito,
@@ -101,11 +103,11 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     objectURL = null;  
      
     browser.downloads.search({id}).then(items => {
-      const state = items[0]?.state;
-      if (state) finishDownload({id,state:{current:state}});
+      if (items[0]) return finishDownload({id},items[0]);
     }).catch(() => {});
     return {ok: true};
   } catch (error) {
+    if (TVDDownloadStatus.cancelled(error)) return {ok:false,error:t("saveCancelled")};
     return {ok: false, error: t(item.type === "gif" ? (error.message === "gifTooLarge" ? "gifTooLarge" : "gifFailed") : "downloadFailed")};
   } finally {
     if (objectURL) URL.revokeObjectURL(objectURL);
@@ -115,16 +117,23 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
   }
 });
 
-function finishDownload(delta) {
+async function finishDownload(delta, snapshot = null) {
   const item = activeDownloads.get(delta.id);
-  if (!item || !["complete", "interrupted"].includes(delta.state?.current)) return;
+  if (!item || (!snapshot && !delta.state && !delta.error && !delta.paused)) return;
+  if (!snapshot && delta.state?.current === "complete") snapshot = {state:"complete"};
+  if (!snapshot) {
+    try { [snapshot] = await browser.downloads.search({id:delta.id}); }
+    catch { return; }
+  }
+  const result = TVDDownloadStatus.outcome(snapshot);
+  if (!result || activeDownloads.get(delta.id) !== item) return;
   activeDownloads.delete(delta.id);
   if (item.objectURL) URL.revokeObjectURL(item.objectURL);
   browser.tabs.sendMessage(item.tabId, {
-    type: "xfd:finished", id: item.postId, kind:item.kind, ok: delta.state.current === "complete"
+    type:"xfd:finished", id:item.postId, kind:item.kind, ok:result === "complete", cancelled:result === "cancelled"
   }).catch(() => {});
 }
-browser.downloads.onChanged.addListener(finishDownload);
+browser.downloads.onChanged.addListener(delta => { finishDownload(delta).catch(() => {}); });
 browser.downloads.onErased.addListener(id => {
   const item = activeDownloads.get(id);
   if (item?.objectURL) URL.revokeObjectURL(item.objectURL);
