@@ -1,0 +1,63 @@
+{
+  "manifest_version": 2,
+  "name": "Twitter Video Downloader",
+  "version": "0.6.0",
+  "description": "__MSG_extensionDescription__",
+  "default_locale": "en",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "x-feed-download@local.invalid",
+      "strict_min_version": "115.0"
+    }
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "webRequest",
+    "webRequestBlocking",
+    "https://x.com/*",
+    "https://twitter.com/*",
+    "https://api.x.com/*",
+    "https://api.twitter.com/*",
+    "https://video.twimg.com/*"
+  ],
+  "icons": {
+    "48": "icon.svg",
+    "96": "icon.svg"
+  },
+  "browser_action": {
+    "default_icon": "icon.svg",
+    "default_title": "Twitter Video Downloader"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true,
+    "browser_style": false
+  },
+  "background": {
+    "scripts": [
+      "filenames.js",
+      "settings.js",
+      "media.js",
+      "gif-converter.js",
+      "response-monitor.js",
+      "background.js"
+    ],
+    "persistent": true
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://x.com/*",
+        "https://twitter.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
+      "run_at": "document_start"
+    }
+  ]
+}
