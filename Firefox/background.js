@@ -6,6 +6,28 @@ const pendingDownloads = new Set();
 let gifJob = null;
 let stopping = false;
 const MAX_POSTS = 600;
+const MAX_METADATA = 2 * 1024 * 1024;
+const metadataOrder = new Map();
+let metadataSize = 0;
+function forgetMetadata(key) {
+  const entry = metadataOrder.get(key);
+  if (!entry) return;
+  metadataOrder.delete(key); metadataSize -= entry.size;
+  const cache = tabMedia.get(entry.tabId);
+  cache?.delete(entry.id);
+  if (cache && !cache.size) tabMedia.delete(entry.tabId);
+}
+function storeMetadata(tabId,id,items) {
+  const size = JSON.stringify(items).length;
+  if (!items.length || size > MAX_METADATA) return;
+  const key = `${tabId}:${id}`;
+  forgetMetadata(key);
+  let cache = tabMedia.get(tabId);
+  if (!cache) tabMedia.set(tabId,cache = new Map());
+  cache.set(id,items);
+  metadataOrder.set(key,{tabId,id,size}); metadataSize += size;
+  while (metadataOrder.size > MAX_POSTS || metadataSize > MAX_METADATA) forgetMetadata(metadataOrder.keys().next().value);
+}
 const monitor = new XFDResponseMonitor(browser.webRequest,remember);
 browser.browserAction.onClicked.addListener(() => { browser.runtime.openOptionsPage().catch(() => {}); });
 
@@ -13,13 +35,7 @@ function remember(tabId, json) {
   if (stopping) return;
   const found = XFDMedia.extract(json);
   if (!found.size) return;
-  let cache = tabMedia.get(tabId);
-  if (!cache) tabMedia.set(tabId, cache = new Map());
-  for (const [id, media] of found) {
-    cache.delete(id);
-    cache.set(id, media);
-  }
-  while (cache.size > MAX_POSTS) cache.delete(cache.keys().next().value);
+  for (const [id, media] of found) storeMetadata(tabId,id,XFDMedia.cleanItems(media,id));
   browser.tabs.sendMessage(tabId, {type: "xfd:updated"}).catch(() => {});
 }
 
@@ -35,7 +51,7 @@ browser.webRequest.onBeforeRequest.addListener(details => {
 }, ["blocking"]);
 
 function clearTab(tabId) {
-  tabMedia.delete(tabId);
+  for (const [key,entry] of metadataOrder) if (entry.tabId === tabId) forgetMetadata(key);
   monitor.clearTab(tabId);
   for (const operation of pendingDownloads) if (operation.tabId === tabId) operation.controller.abort();
 }
@@ -46,9 +62,21 @@ browser.tabs.onUpdated.addListener((tabId, change) => {
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
   if (stopping || !sender.tab || sender.frameId !== 0) return;
-  let host;
-  try { host = new URL(sender.url).hostname; } catch { return; }
-  if (!["x.com", "twitter.com"].includes(host)) return;
+  let source;
+  try { source = new URL(sender.url); } catch { return; }
+  if (source.protocol !== "https:" || !["x.com", "twitter.com"].includes(source.hostname)) return;
+  if (message?.type === "tvd:recovered-media") {
+    if (!Array.isArray(message.entries) || JSON.stringify(message.entries).length > 512 * 1024) return {ok:false};
+    let changed = false;
+    for (const pair of message.entries.slice(0,100)) {
+      if (!Array.isArray(pair) || typeof pair[0] !== "string" || !/^\d{1,30}$/.test(pair[0])) continue;
+      const [id,raw] = pair, items = XFDMedia.cleanItems(raw,id);
+      if (!items.length || tabMedia.get(sender.tab.id)?.has(id)) continue;
+      storeMetadata(sender.tab.id,id,items); changed = true;
+    }
+    if (changed) browser.tabs.sendMessage(sender.tab.id,{type:"xfd:updated"}).catch(() => {});
+    return {ok:true};
+  }
   const cache = tabMedia.get(sender.tab.id);
   if (message?.type === "xfd:lookup") {
     const ids = Array.isArray(message.ids) ? message.ids.slice(0, 100) : [];
@@ -150,7 +178,7 @@ function shutdown() {
   }
   pendingDownloads.clear(); gifJob = null;
   for (const item of activeDownloads.values()) if (item.objectURL) URL.revokeObjectURL(item.objectURL);
-  activeDownloads.clear(); tabMedia.clear();
+  activeDownloads.clear(); tabMedia.clear(); metadataOrder.clear(); metadataSize = 0;
 }
  
 globalThis.addEventListener("pagehide",shutdown);

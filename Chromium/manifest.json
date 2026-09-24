@@ -18,12 +18,14 @@
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
+    "96": "icons/icon96.png",
     "128": "icons/icon128.png"
   },
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
-      "32": "icons/icon32.png"
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
     },
     "default_title": "Twitter Video Downloader"
   },
@@ -44,6 +46,7 @@
         "compat.js",
         "bridge.js",
         "post-context.js",
+        "recovery.js",
         "content.js"
       ],
       "css": [
@@ -58,6 +61,8 @@
       ],
       "js": [
         "media.js",
+        "post-context.js",
+        "page-media.js",
         "capture.js"
       ],
       "run_at": "document_start",

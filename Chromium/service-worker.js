@@ -34,43 +34,30 @@ function closeIfIdle() {
     if (state.job || Object.values(state.downloads).some(d => d.jobId)) return;
     if (!await hasOffscreen()) return;
     const status = await off({type:"tvd:status"});
-    if (!status?.jobId && !status?.blobs?.length) await chrome.offscreen.closeDocument();
+    if (status && !status.jobId) await chrome.offscreen.closeDocument();
   }).catch(() => {});
 }
 function sourceSender(sender) {
   if (sender.id !== chrome.runtime.id || !sender.tab || sender.frameId !== 0 || !sender.documentId) return false;
   try { const url = new URL(sender.url); return url.protocol === "https:" && ["x.com","twitter.com"].includes(url.hostname); } catch { return false; }
 }
-function cleanItems(value,id) {
-  if (!Array.isArray(value)) return [];
-  return value.slice(0,16).flatMap(item => {
-    if (!item || !["video","gif"].includes(item.type)) return [];
-    const variants = (Array.isArray(item.variants) ? item.variants : [item]).slice(0,12).flatMap(v => {
-      if (!v || typeof v.url !== "string" || v.url.length > 2048) return [];
-      const url = XFDMedia.mp4URL(v.url); if (!url) return [];
-      const dimensions = new URL(url).pathname.match(/\/(\d{1,5})x(\d{1,5})\//);
-      return [{url,bitrate:Number.isFinite(v.bitrate) ? Math.max(0,Math.min(1e9,v.bitrate)) : 0,width:dimensions ? Number(dimensions[1]) : 0,height:dimensions ? Number(dimensions[2]) : 0}];
-    });
-    if (!variants.length) return [];
-    variants.sort((a,b) => b.bitrate-a.bitrate);
-    const text = (v,n) => typeof v === "string" ? Array.from(v).slice(0,n).join("") : "";
-    return [{...variants[0],variants,type:item.type,sourceId:/^\d{1,30}$/.test(item.sourceId || "") ? item.sourceId : id,
-      author:text(item.author,50),text:text(item.text,80),createdAt:text(item.createdAt,80)}];
-  });
-}
 async function remember(message,sender) {
   if (!Array.isArray(message.entries) || JSON.stringify(message.entries).length > 1024*1024) return {ok:false};
   await transaction(s => {
     for (const pair of message.entries.slice(0,100)) {
       if (!Array.isArray(pair) || typeof pair[0] !== "string" || !/^\d{1,30}$/.test(pair[0])) continue;
-      const [id,raw] = pair, items = cleanItems(raw,id); if (!items.length) continue;
-      if (message.type === "tvd:visible-media" && s.posts.some(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)) continue;
+      const [id,raw] = pair, items = XFDMedia.cleanItems(raw,id); if (!items.length) continue;
+      if (message.type === "tvd:recovered-media" && s.posts.some(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)) continue;
       s.posts = s.posts.filter(p => !(p.tabId === sender.tab.id && p.id === id));
       s.posts.push({tabId:sender.tab.id,documentId:sender.documentId,id,items});
     }
     if (s.posts.length > 600) s.posts.splice(0,s.posts.length-600);
      
-    while (s.posts.length && JSON.stringify(s.posts).length > 2*1024*1024) s.posts.shift();
+    let size = 2;
+    for (let i=s.posts.length-1;i>=0;i--) {
+      size += JSON.stringify(s.posts[i]).length+1;
+      if (size > 2*1024*1024) { s.posts.splice(0,i+1); break; }
+    }
   });
   tell(sender.tab.id,{type:"xfd:updated"},sender.documentId); return {ok:true};
 }
@@ -166,7 +153,7 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
   let task;
   if (message.target === "worker" && sender.id === chrome.runtime.id && !sender.tab && sender.url === chrome.runtime.getURL(OFFSCREEN)) task = handleOffscreen(message);
   else if (sourceSender(sender)) {
-    if (["tvd:metadata","tvd:visible-media"].includes(message.type)) task = remember(message,sender);
+    if (["tvd:metadata","tvd:recovered-media"].includes(message.type)) task = remember(message,sender);
     else if (message.type === "xfd:lookup") task = stateQueue.then(() => {
       const ids = Array.isArray(message.ids) ? message.ids.slice(0,100).filter(id => typeof id === "string" && /^\d{1,30}$/.test(id)) : [];
       return Object.fromEntries(ids.map(id => [id,(state.posts.find(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)?.items || []).map(m => m.type)]));
@@ -223,4 +210,5 @@ stateQueue.then(async () => {
     if (items[0]) await finishDownload({id:Number(id)},items[0]);
     else await forgetDownload(Number(id));
   }
+  await closeIfIdle();
 }).catch(() => {});

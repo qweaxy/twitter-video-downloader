@@ -68,11 +68,12 @@
     return visibleMedia(nested, depth + 1);
   }
   function extract(root) {
-    const found = new Map(), stack = [root];
+    const found = new Map(), stack = [root], seen = new WeakSet();
     let budget = 100000;
     while (stack.length && budget-- > 0) {
       const node = stack.pop();
-      if (!node || typeof node !== "object") continue;
+      if (!node || typeof node !== "object" || seen.has(node)) continue;
+      seen.add(node);
       const id = node.rest_id || node.id_str;
       if (typeof id === "string" && /^\d+$/.test(id)) {
         const media = visibleMedia(node);
@@ -85,5 +86,23 @@
     }
     return found;
   }
-  globalThis.XFDMedia = {mp4URL, extract, selectVariant};
+
+function cleanItems(value,id) {
+  if (!Array.isArray(value)) return [];
+  return value.slice(0,16).flatMap(item => {
+    if (!item || !["video","gif"].includes(item.type)) return [];
+    const variants = (Array.isArray(item.variants) ? item.variants : [item]).slice(0,12).flatMap(v => {
+      if (!v || typeof v.url !== "string" || v.url.length > 2048) return [];
+      const url = mp4URL(v.url); if (!url) return [];
+      const dimensions = new URL(url).pathname.match(/\/(\d{1,5})x(\d{1,5})\//);
+      return [{url,bitrate:Number.isFinite(v.bitrate) ? Math.max(0,Math.min(1e9,v.bitrate)) : 0,width:dimensions ? Number(dimensions[1]) : 0,height:dimensions ? Number(dimensions[2]) : 0}];
+    });
+    if (!variants.length) return [];
+    variants.sort((a,b) => b.bitrate-a.bitrate);
+    const text = (v,n) => typeof v === "string" ? Array.from(v).slice(0,n).join("") : "";
+    return [{...variants[0],variants,type:item.type,sourceId:/^\d{1,30}$/.test(item.sourceId || "") ? item.sourceId : id,
+      author:text(item.author,50),text:text(item.text,80),createdAt:text(item.createdAt,80)}];
+  });
+}
+  globalThis.XFDMedia = {mp4URL, extract, selectVariant, cleanItems};
 })();

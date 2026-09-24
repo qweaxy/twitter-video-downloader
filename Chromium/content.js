@@ -6,10 +6,10 @@
   const articleSelector = TVDPost.articleSelector;
   const postId = article => TVDPost.postId(article);
   let lookupFailures = 0, retryAfter = 0;
-  async function lookup(article,id) {
+  async function lookup(article,id,recover = false) {
     let kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
-    if (!kinds?.[id]?.length && globalThis.TVDVisibleMedia) {
-      if (await TVDVisibleMedia.remember(article,id)) kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
+    if (!kinds?.[id]?.length && recover && globalThis.TVDRecovery) {
+      if (await TVDRecovery.remember(article,id)) kinds = await browser.runtime.sendMessage({type:"xfd:lookup",ids:[id]});
     }
     return kinds?.[id] || [];
   }
@@ -113,12 +113,24 @@
     if (panelOwner === button) { closePanel(true); return; }
     const id = postId(button.closest(articleSelector));
     if (!id) return;
+    if (button.disabled) return;
+    button.disabled = true;
+    let types;
     try {
-      const types = await lookup(button.closest(articleSelector),id);
+      types = await lookup(button.closest(articleSelector),id,true);
+      if (!types.length) {
+        for (const delay of [250,750]) {
+          await new Promise(resolve => setTimeout(resolve,delay));
+          if (disposed || !button.isConnected || postId(button.closest(articleSelector)) !== id) return;
+          types = await lookup(button.closest(articleSelector),id,true);
+          if (types.length) break;
+        }
+      }
       if (disposed || !button.isConnected || postId(button.closest(articleSelector)) !== id) return;
       if (!types.length) { notify(t("linkMissing")); return; }
-      mediaMenu(button,id,types);
-    } catch { notify(t("reloadPage")); }
+    } catch { if (!disposed) notify(t("reloadPage")); return; }
+    finally { button.disabled = false; }
+    mediaMenu(button,id,types);
   }
   function syncColor(button, caret) {
      
@@ -174,7 +186,7 @@
     placement.parent.insertBefore(newSlot,placement.anchor);
   }
   async function scan() {
-    if (disposed) return;
+    if (disposed || document.hidden) return;
     scanning = true;
     try {
       const articles = [...document.querySelectorAll(articleSelector)];
@@ -188,12 +200,6 @@
           const result = await browser.runtime.sendMessage({type:"xfd:lookup",ids:entries.slice(i,i+100).map(([,id]) => id)});
           if (!result || result.ok === false) throw new Error("lookupFailed");
           Object.assign(counts,result);
-        }
-        if (globalThis.TVDVisibleMedia) {
-          for (const [article,id] of entries) {
-            if (disposed) return;
-            if (!counts[id]?.length && await TVDVisibleMedia.remember(article,id)) counts[id] = await lookup(article,id);
-          }
         }
         lookupFailures = 0; retryAfter = 0;
       } catch {
@@ -213,13 +219,33 @@
     }
   }
   function schedule() {
-    if (disposed) return;
+    if (disposed || document.hidden) return;
     if (scanning) { scanAgain = true; return; }
     if (scanTimer === null) scanTimer = setTimeout(() => {
       scanTimer = null; scan().catch(() => {});
     },Math.max(120,retryAfter-Date.now()));
   }
-  const observer = new MutationObserver(schedule);
+  const relevantNodes = `${articleSelector}, video, [data-testid="videoPlayer"], [data-testid="caret"], [data-testid="User-Name"], time, a[href*="/status/"]`;
+  const extensionNodes = ".xfd-slot, .xfd-button, .xfd-panel, .xfd-toast";
+  function pageChanged(records) {
+    if (panelOwner && !panelOwner.isConnected) closePanel();
+    for (const record of records) {
+      if (record.target.nodeType === 1 && record.target.closest(extensionNodes)) continue;
+      if (record.type === "attributes") {
+        if (record.attributeName === "data-testid" || record.target.matches("a")) { schedule(); return; }
+      } else {
+        for (const node of [...record.addedNodes,...record.removedNodes]) {
+          if (node.nodeType === 1 && !node.matches(extensionNodes) &&
+              (node.matches(relevantNodes) || node.querySelector(relevantNodes))) { schedule(); return; }
+        }
+      }
+    }
+  }
+  const observer = new MutationObserver(pageChanged);
+  document.addEventListener("visibilitychange",() => {
+    if (document.hidden) { clearTimeout(scanTimer); scanTimer = null; }
+    else schedule();
+  });
   browser.runtime.onMessage.addListener(message => {
     if (disposed) return;
     if (message.type === "xfd:updated") { retryAfter = 0; schedule(); }
@@ -245,8 +271,6 @@
   });
   document.addEventListener("scroll", e => { if (panel && !panel.contains(e.target)) closePanel(); }, true);
   window.addEventListener("resize", schedule, {passive: true});
-  document.addEventListener("loadedmetadata",schedule,true);
-  document.addEventListener("loadeddata",schedule,true);
   window.addEventListener("popstate",schedule);
    
   const themeObserver = new MutationObserver(schedule);
@@ -260,7 +284,7 @@
   }
   function resume() {
     disposed = false; retryAfter = 0;
-    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["href","src","poster","data-testid"]});
+    observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true,attributeFilter:["href","data-testid"]});
     themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:["class","style","data-theme"]});
     observeBodyTheme(); schedule();
   }

@@ -7,7 +7,7 @@ body { margin:0; background:var(--bg); color:var(--fg); font:15px/1.5 "TwitterCh
 main { width:min(calc(100% - 48px),1000px); margin:42px auto 28px; }
 .page-header { padding:0 6px; }
 .brand { display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700; }
-.brand img { padding:3px; background:transparent; border-radius:8px; }
+.brand img { padding:3px; background:#000; border-radius:8px; }
 .version { margin-left:4px; font-size:11px; letter-spacing:.5px; padding:2px 7px; border:1px solid var(--line); border-radius:5px; color:var(--muted); }
 h1 { font-size:clamp(28px,4vw,42px); line-height:1.16; margin:24px 0 12px; letter-spacing:-1.3px; }
 h2 { font-size:22px; line-height:1.25; letter-spacing:-.4px; margin:0; }

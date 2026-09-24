@@ -49,7 +49,7 @@
     signal.addEventListener("abort",releaseResources,{once:true});
     try {
       checkCancelled();
-      const response = await fetch(url,{signal,credentials:"omit",redirect:"error"});
+      const response = await fetch(url,{signal,credentials:"omit",redirect:"error",cache:"no-store"});
       checkCancelled();
       if (!response.ok || !response.body) throw new Error("gifFailed");
       if (Number(response.headers.get("content-length")) > MAX_SOURCE) {
