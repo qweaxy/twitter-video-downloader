@@ -25,7 +25,7 @@ async function hasOffscreen() {
 }
 function ensureOffscreen() {
   return offscreenTask(async () => {
-    if (!await hasOffscreen()) await chrome.offscreen.createDocument({url:OFFSCREEN,reasons:["BLOBS","WORKERS"],justification:"Decode animation frames and encode a GIF locally, keeping its Blob alive until the download finishes."});
+    if (!await hasOffscreen()) await chrome.offscreen.createDocument({url:OFFSCREEN,reasons:["BLOBS","WORKERS"],justification:"Convert GIF or MP4 locally and keep the result available until its download finishes."});
   });
 }
 function closeIfIdle() {
@@ -70,7 +70,7 @@ async function saveDownload(url,job,jobId = null) {
   const id = await chrome.downloads.download({url,filename:job.filename,conflictAction:"uniquify",
     ...(job.saveLocation === "browser" ? {} : {saveAs:job.saveLocation === "ask"})});
   await transaction(s => {
-    s.downloads[id] = {tabId:job.tabId,documentId:job.documentId,postId:job.postId,kind:job.kind,jobId};
+    s.downloads[id] = {tabId:job.tabId,documentId:job.documentId,postId:job.postId,index:job.index,kind:job.kind,jobId};
     if (jobId && s.job?.id === jobId) s.job = null;
   });
   const items = await chrome.downloads.search({id}).catch(() => []);
@@ -85,14 +85,21 @@ async function requestDownload(message,sender) {
   let item = post?.items[index]; if (!item) return {ok:false,error:t("linkMissing")};
   let settings;
   try { settings = await XFDSettings.load(); } catch { return {ok:false,error:t("settingsLoadFailed")}; }
-  if ((message.format !== undefined && !["mp4","gif"].includes(message.format)) || (item.type === "gif" && message.format === "mp4")) return {ok:false,error:t("variantUnavailable")};
+  if (settings.advancedMode && message.profile) {
+    const profile = XFDSettings.normalizeProfile(message.profile,settings);
+    await XFDSettings.commit(profile,true);
+    settings = {...settings,...profile};
+  }
+  if (message.format !== undefined && !["mp4","gif"].includes(message.format)) return {ok:false,error:t("variantUnavailable")};
+  if (!settings.advancedMode && !settings.allowVideoGif && item.type === "video" && message.format === "gif") return {ok:false,error:t("variantUnavailable")};
   item = {...item,type:message.format === "gif" ? "gif" : message.format === "mp4" ? "video" : item.type};
   item = XFDMedia.selectVariant(item,item.type === "gif" ? "best" : settings.videoQuality);
   if (!item) return {ok:false,error:t("variantUnavailable")};
-  const job = {id:crypto.randomUUID(),tabId:sender.tab.id,documentId:sender.documentId,postId:message.id,kind:item.type,
-    filename:XFDFilenames.build(settings,item,message.id,index),saveLocation:settings.saveLocation,started:Date.now()};
+  const job = {id:crypto.randomUUID(),tabId:sender.tab.id,documentId:sender.documentId,postId:message.id,index,kind:item.type,
+    filename:XFDFilenames.build(settings,item,message.id,index),saveLocation:settings.saveLocation,sourceUrl:item.url,started:Date.now()};
   if (!await stillCurrent(job)) return {ok:false,error:t("downloadCancelled")};
-  if (item.type === "video") {
+  const convertMp4 = (settings.advancedMode || settings.videoPreset === "custom") && (settings.videoFpsCap != null || settings.videoBitrateCap != null) && item.type === "video" && !message.original;
+  if (item.type === "video" && !convertMp4) {
     try { return await saveDownload(item.url,job); } catch (error) { return {ok:false,error:t(TVDDownloadStatus.cancelled(error) ? "saveCancelled" : "downloadFailed")}; }
   }
    
@@ -108,15 +115,16 @@ async function requestDownload(message,sender) {
     await ensureOffscreen();
     await stateQueue;
     if (state.job?.id !== job.id || !await stillCurrent(job)) throw new Error("downloadCancelled");
-    const response = await off({type:"tvd:convert",jobId:job.id,url:item.url,settings});
-    if (!response?.ok) throw new Error(response?.error || "gifFailed");
+    const response = await off({type:convertMp4 ? "tvd:convert-mp4" : "tvd:convert",jobId:job.id,url:item.url,settings});
+    if (!response?.ok) throw new Error(response?.error || (convertMp4 ? "mp4Failed" : "gifFailed"));
     await stateQueue;
-    if (state.job?.id !== job.id) { await off({type:"tvd:cancel",jobId:job.id}); throw new Error("downloadCancelled"); }
-    tell(job.tabId,{type:"xfd:converting",id:job.postId,percent:0},job.documentId);
-    return {ok:true,converting:true};
+    // A very fast conversion may already have reported completion while the start reply was in flight.
+    if (state.job?.id !== job.id) return {ok:true,kind:job.kind};
+    tell(job.tabId,{type:"xfd:converting",id:job.postId,kind:job.kind,percent:0},job.documentId);
+    return {ok:true,converting:true,kind:job.kind};
   } catch (error) {
     await transaction(s => { if (s.job?.id === job.id) s.job = null; });
-    closeIfIdle(); return {ok:false,error:t(["gifBusy","downloadCancelled"].includes(error.message) ? error.message : "gifFailed")};
+    closeIfIdle(); return {ok:false,error:t(["gifBusy","downloadCancelled"].includes(error.message) ? error.message : (convertMp4 ? "mp4Failed" : "gifFailed")),original:convertMp4};
   }
 }
 async function handleOffscreen(message) {
@@ -126,13 +134,23 @@ async function handleOffscreen(message) {
   if (!job || job.id !== message.jobId) return {ok:false};
   if (message.type === "tvd:heartbeat") return {ok:true};
   if (message.type === "tvd:progress") {
-    tell(job.tabId,{type:"xfd:converting",id:job.postId,percent:Math.max(0,Math.min(100,Number(message.percent) || 0))},job.documentId);
+    tell(job.tabId,{type:"xfd:converting",id:job.postId,kind:job.kind,percent:Math.max(0,Math.min(100,Number(message.percent) || 0))},job.documentId);
     return {ok:true};
   }
   if (message.type === "tvd:conversion-error") {
     await transaction(s => { if (s.job?.id === job.id) s.job = null; });
-    tell(job.tabId,{type:"tvd:error",error:t(message.error === "gifTooLarge" ? "gifTooLarge" : "gifFailed")},job.documentId);
+    const code = job.kind === "video" ? (["mp4TooLarge","mp4Unavailable"].includes(message.error) ? message.error : "mp4Failed")
+      : (message.error === "gifTooLarge" ? "gifTooLarge" : "gifFailed");
+    tell(job.tabId,{type:"tvd:error",error:t(code),original:job.kind === "video",id:job.postId,index:job.index},job.documentId);
     return {ok:true};
+  }
+  if (message.type === "tvd:unchanged" && job.kind === "video") {
+    try {
+      const result = await saveDownload(job.sourceUrl,job);
+      await transaction(s => { if (s.job?.id === job.id) s.job = null; });
+      return result;
+    }
+    catch { await transaction(s => { if (s.job?.id === job.id) s.job = null; }); return {ok:false}; }
   }
   if (message.type === "tvd:ready") {
     const prefix = `blob:${chrome.runtime.getURL("")}`;
@@ -152,13 +170,26 @@ chrome.runtime.onMessage.addListener((message,sender,respond) => {
   if (!message || message.target === "offscreen") return;
   let task;
   if (message.target === "worker" && sender.id === chrome.runtime.id && !sender.tab && sender.url === chrome.runtime.getURL(OFFSCREEN)) task = handleOffscreen(message);
-  else if (sourceSender(sender)) {
+  else if (sender.id === chrome.runtime.id && ["options.html","popup.html"].some(page => sender.url?.split("#")[0] === chrome.runtime.getURL(page)) && message.type === "xfd:update-settings") {
+    task = XFDSettings.commit(message.patch).then(value => ({ok:true,value}));
+  } else if (sourceSender(sender)) {
     if (["tvd:metadata","tvd:recovered-media"].includes(message.type)) task = remember(message,sender);
     else if (message.type === "xfd:lookup") task = stateQueue.then(() => {
       const ids = Array.isArray(message.ids) ? message.ids.slice(0,100).filter(id => typeof id === "string" && /^\d{1,30}$/.test(id)) : [];
       return Object.fromEntries(ids.map(id => [id,(state.posts.find(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === id)?.items || []).map(m => m.type)]));
     });
     else if (message.type === "xfd:download") task = requestDownload(message,sender);
+    else if (message.type === "xfd:update-profile") task = XFDSettings.commit(message.patch,true).then(value => ({ok:true,value}));
+    else if (message.type === "xfd:preferences") task = (async () => {
+      await stateQueue;
+      const settings = await XFDSettings.load(), profile = await XFDSettings.loadProfile(settings);
+      const items = state.posts.find(p => p.tabId === sender.tab.id && p.documentId === sender.documentId && p.id === message.id)?.items || [];
+      const originals = items.map(item => {
+        const best = XFDMedia.selectVariant(item,"best");
+        return {width:best?.width || 0,height:best?.height || 0,bitrate:best?.bitrate || 0};
+      });
+      return {settings,profile,originals};
+    })();
   }
   if (!task) return;
   task.then(respond,() => respond({ok:false,error:t("downloadFailed")})); return true;
@@ -190,7 +221,7 @@ async function finishDownload(delta, snapshot = null) {
   });
   if (!item) return;
   if (item.jobId) await off({type:"tvd:release",jobId:item.jobId}).catch(() => {});
-  tell(item.tabId,{type:"xfd:finished",id:item.postId,kind:item.kind,ok:result === "complete",cancelled:result === "cancelled"},item.documentId);
+  tell(item.tabId,{type:"xfd:finished",id:item.postId,index:item.index,kind:item.kind,ok:result === "complete",cancelled:result === "cancelled"},item.documentId);
   closeIfIdle();
 }
 async function forgetDownload(id) {
@@ -198,7 +229,9 @@ async function forgetDownload(id) {
   if (item?.jobId) await off({type:"tvd:release",jobId:item.jobId}).catch(() => {});
   closeIfIdle();
 }
-chrome.action.onClicked.addListener(() => { chrome.runtime.openOptionsPage().catch(() => {}); });
+chrome.runtime.onInstalled.addListener(details => {
+  if (details.reason === "install") chrome.tabs.create({url:chrome.runtime.getURL("welcome.html")}).catch(error => console.error("Could not open welcome page",error));
+});
 chrome.tabs.onRemoved.addListener(id => { clearTab(id).catch(() => {}); });
 chrome.tabs.onUpdated.addListener((id,change) => { if (change.status === "loading") clearTab(id).catch(() => {}); });
 chrome.downloads.onChanged.addListener(delta => { finishDownload(delta).catch(() => {}); });

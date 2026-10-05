@@ -31,8 +31,7 @@
     const sourceId = /^\d+$/.test(item.sourceId || "") ? item.sourceId : String(postId);
     let width = Number(item.width) || 0, height = Number(item.height) || 0;
     if (kind === "gif" && width && height) {
-      const scale = typeof settings.gifScale === "number" ? Math.max(10,Math.min(100,settings.gifScale)) : 100;
-      width = Math.max(1,Math.round(width * scale / 100)); height = Math.max(1,Math.round(height * scale / 100));
+      ({width,height} = XFDSettings.gifDimensions(width,height,settings));
     }
     const values = {
       author:item.author || "unknown", id:sourceId,

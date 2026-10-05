@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Twitter Video Downloader — Welcome</title>
+  <link rel="stylesheet" href="welcome.css">
+  <script defer src="welcome.js"></script>
+</head>
+<body>
+  <main>
+    <div class="brand"><img src="settings-icon.svg" alt="" width="32" height="32"><span>Twitter Video Downloader</span></div>
+    <section class="welcome-card" aria-labelledby="welcome-heading">
+      <span class="accent" aria-hidden="true"></span>
+      <h1 id="welcome-heading" data-i18n="welcomeHeadline">Welcome!</h1>
+      <p data-i18n="welcomeIntro">Download videos and GIFs from X. Customize quality and filenames in Settings.</p>
+      <div class="actions">
+        <button id="settings" class="primary" type="button" data-i18n="welcomeSettings">Settings</button>
+        <button id="close" class="secondary" type="button" data-i18n="welcomeClose">Close</button>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Twitter Video Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+  <script defer src="compat.js"></script><script defer src="filenames.js"></script><script defer src="settings.js"></script><script defer src="popup.js"></script>
+</head>
+<body>
+  <main>
+    <header><img src="settings-icon.svg" alt="" width="28" height="28"><strong>Twitter Video Downloader</strong><button id="openSettings" class="gear" type="button" data-i18n-aria="settingsTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 3-.6 2.7-2 1.2L3.8 6l-3 5.2L3 13v2l-2.2 1.8 3 5.2 2.6-.9 2 1.2L9 25h6l.6-2.7 2-1.2 2.6.9 3-5.2L21 15v-2l2.2-1.8-3-5.2-2.6.9-2-1.2L15 3Z" transform="translate(1 -1) scale(.9)" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.7"/></svg></button></header>
+    <h1 data-i18n="quickSettingsTitle">Quick settings</h1>
+    <label class="switch"><span data-i18n="advancedModeLabel">Advanced download mode</span><input id="advancedMode" type="checkbox" disabled></label>
+    <label class="switch"><span data-i18n="allowVideoGifLabel">Offer GIF for videos</span><input id="allowVideoGif" type="checkbox" disabled></label>
+    <p id="advancedWarning" class="resource-warning" role="status" data-i18n="advancedResourceWarning" hidden>Creating GIFs and re-encoding MP4 uses device resources. On slower devices, save MP4 without lowering FPS or bitrate.</p>
+    <section id="presets" hidden>
+      <div class="preset-row"><span data-i18n="videoTab">Video</span><div role="group" data-i18n-aria="videoPresets"><button type="button" data-video="quality" data-i18n="presetBest">Original</button><button type="button" data-video="balanced" data-i18n="presetBalanced">Balanced</button><button type="button" data-video="compact" data-i18n="presetCompact">Compact</button><button type="button" data-custom="video" data-i18n-aria="customQualityOpen"><span data-i18n="presetCustom">Custom</span><svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M21 3l-10 10M10 3H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+      <div class="preset-row"><span data-i18n="gifTab">GIF</span><div role="group" data-i18n-aria="gifPresets"><button type="button" data-gif="quality" data-i18n="presetBest">Original</button><button type="button" data-gif="balanced" data-i18n="presetBalanced">Balanced</button><button type="button" data-gif="compact" data-i18n="presetCompact">Compact</button><button type="button" data-custom="gif" data-i18n-aria="customQualityOpen"><span data-i18n="presetCustom">Custom</span><svg class="external-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7M21 3l-10 10M10 3H4a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div></div>
+    </section>
+    <p id="status" role="status" aria-live="polite" hidden></p>
+  </main>
+</body>
+</html>

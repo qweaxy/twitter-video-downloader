@@ -32,11 +32,12 @@
   async function convert(url, onProgress, signal, preferences = {}) {
     if (!XFDMedia.mp4URL(url)) throw new Error("gifFailed");
     const settings = XFDSettings.normalize(preferences);
-    let sourceURL, worker, video, canvas, reader;
+    let sourceURL, worker, video, canvas, reader, mediaInput;
     const checkCancelled = () => { if (signal.aborted) throw new Error("gifFailed"); };
     const releaseResources = () => {
        
        
+      if (mediaInput) { try { mediaInput.dispose(); } catch {} mediaInput = null; }
       if (worker) { try { worker.terminate(); } catch {   } worker = null; }
       if (reader) { try { reader.cancel().catch(() => {}); } catch {   } reader = null; }
       if (video) {
@@ -66,7 +67,8 @@
         chunks.push(value);
       }
       reader.releaseLock(); reader = null;
-      sourceURL = URL.createObjectURL(new Blob(chunks,{type:"video/mp4"}));
+      const sourceBlob = new Blob(chunks,{type:"video/mp4"});
+      sourceURL = URL.createObjectURL(sourceBlob);
       chunks.length = 0;
       video = document.createElement("video");
       video.muted = true; video.preload = "auto"; video.playsInline = true;
@@ -76,7 +78,7 @@
       const {duration,videoWidth:sourceWidth,videoHeight:sourceHeight} = video;
       if (!Number.isFinite(duration) || duration <= 0) throw new Error("gifFailed");
       if (!sourceWidth || !sourceHeight) throw new Error("gifFailed");
-      const {width,height} = XFDSettings.dimensions(sourceWidth,sourceHeight,settings.gifScale);
+      const {width,height} = XFDSettings.gifDimensions(sourceWidth,sourceHeight,settings);
       if (duration > 120 || width * height > 2073600) throw new Error("gifTooLarge");
       canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height;
       const ctx = canvas.getContext("2d",{willReadFrequently:true});
@@ -84,7 +86,25 @@
       ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
       worker = new Worker(browser.runtime.getURL("gif-worker.js"));
       await workerCall(worker,{type:"init",width,height,colors:settings.gifColors},signal);
-      const frames = XFDSettings.framePlan(duration,settings.gifFps);
+      let frames;
+      if (settings.gifFps == null) {
+        const {Input,BlobSource,MP4,EncodedPacketSink} = await import(browser.runtime.getURL("vendor/mediabunny.min.mjs"));
+        checkCancelled();
+        const input = new Input({source:new BlobSource(sourceBlob),formats:[MP4]}); mediaInput = input;
+        try {
+          const track = await input.getPrimaryVideoTrack();
+          if (!track) throw new Error("gifFailed");
+          const timestamps = [];
+          for await (const packet of new EncodedPacketSink(track).packets(undefined,undefined,{metadataOnly:true})) {
+            checkCancelled();
+            if (timestamps.length >= 30000) throw new Error("gifTooLarge");
+            timestamps.push(packet.timestamp);
+          }
+          if (!timestamps.length) throw new Error("gifFailed");
+          frames = XFDSettings.sourceFramePlan(duration,timestamps);
+        } finally { input.dispose(); mediaInput = null; }
+      } else frames = XFDSettings.framePlan(duration,settings.gifFps);
+      checkCancelled();
       for (let i = 0; i < frames.length; i++) {
         checkCancelled();
         const {time,delay} = frames[i];

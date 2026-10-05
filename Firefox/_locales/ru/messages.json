@@ -1,12 +1,12 @@
 {
   "extensionDescription": {
-    "message": "Скачивай видео в MP4, а анимации в GIF прямо из ленты X."
+    "message": "Скачивайте видео и GIF прямо из ленты X."
   },
   "downloadVideo": {
     "message": "Скачать видео"
   },
   "chooseVideo": {
-    "message": "Выбери видео или GIF"
+    "message": "Выберите видео или GIF"
   },
   "downloadVideoNumber": {
     "message": "Скачать видео $NUMBER$",
@@ -18,31 +18,31 @@
     }
   },
   "downloadStarted": {
-    "message": "Скачивание началось — файл появится в загрузках браузера."
+    "message": "Файл передан в загрузки браузера."
   },
   "videoFailed": {
     "message": "Не удалось получить видео."
   },
   "extensionRestarted": {
-    "message": "Расширение перезапущено. Обнови страницу X."
+    "message": "Расширение перезапущено. Обновите страницу X."
   },
   "reloadPage": {
-    "message": "Обнови страницу X и попробуй снова."
+    "message": "Обновите страницу X и повторите."
   },
   "videoSaved": {
     "message": "Видео сохранено."
   },
   "downloadInterrupted": {
-    "message": "Скачивание прервано. Проверь панель загрузок браузера и попробуй ещё раз."
+    "message": "Скачивание прервано. Проверьте загрузки браузера."
   },
   "linkMissing": {
-    "message": "Ссылка ещё не найдена. Открой пост и обнови страницу, затем попробуй снова."
+    "message": "Ссылка на видео не найдена. Откройте пост и обновите страницу."
   },
   "variantUnavailable": {
-    "message": "Этот вариант видео недоступен."
+    "message": "Этот формат или вариант медиа недоступен."
   },
   "downloadFailed": {
-    "message": "Браузер не смог начать скачивание. Обнови пост и попробуй снова."
+    "message": "Браузер не смог начать скачивание. Попробуйте снова."
   },
   "downloadMedia": {
     "message": "Скачать видео или GIF"
@@ -72,45 +72,15 @@
     }
   },
   "gifBusy": {
-    "message": "Другой GIF ещё создаётся. Дождись завершения и попробуй снова."
+    "message": "Обрабатывается другой файл. Дождитесь завершения."
   },
-  "gifFailed": {
-    "message": "Не удалось создать GIF. Обнови пост и попробуй снова. MP4 не сохранялся."
-  },
-  "gifTooLarge": {
-    "message": "Превышены лимиты GIF: 120 секунд, 2 073 600 пикселей на выходе, 50 МиБ исходного файла или 128 МиБ GIF. Попробуй уменьшить разрешение, частоту кадров или число цветов в настройках."
-  },
+  "gifFailed": {"message":"Не удалось создать GIF. Обновите страницу и повторите."},
+  "gifTooLarge": {"message":"Медиа превышает лимиты GIF. Уменьшите параметры или выберите другое видео."},
   "settingsTitle": {
     "message": "Настройки"
   },
-  "settingsSubtitle": {
-    "message": "Настрой размер и качество GIF для следующего скачивания."
-  },
-  "gifSettings": {
-    "message": "Создание GIF"
-  },
   "gifScaleLabel": {
-    "message": "Разрешение"
-  },
-  "scalePresets": {
-    "message": "Варианты разрешения"
-  },
-  "scaleHelp": {
-    "message": "Процент от исходной ширины и высоты. При 50% остаётся четверть пикселей."
-  },
-  "scaleExample": {
-    "message": "Пример: 1280 × 720 → $WIDTH$ × $HEIGHT$ · $PIXELS$% пикселей. Размер файла зависит от содержимого.",
-    "placeholders": {
-      "width": {
-        "content": "$1"
-      },
-      "height": {
-        "content": "$2"
-      },
-      "pixels": {
-        "content": "$3"
-      }
-    }
+    "message": "Качество, %"
   },
   "fpsLabel": {
     "message": "Частота кадров"
@@ -123,18 +93,11 @@
       }
     }
   },
-  "fpsHelp": {
-    "message": "Меньше кадров — меньше файл. Больше кадров — плавнее движение."
-  },
+  "fpsHelp": {"message":"Меньше FPS — меньше файл. Оригинальный FPS учитывает ограничения GIF."},
   "colorsLabel": {
     "message": "Цветов на кадр"
   },
-  "colorsHelp": {
-    "message": "Небольшая палитра может уменьшить файл, но переходы цветов будут грубее."
-  },
-  "gifOnlyNote": {
-    "message": "Эти параметры применяются к GIF. Качество скачиваемых MP4 не меняется."
-  },
+  "colorsHelp": {"message":"Меньше цветов — меньше файл, грубее градиенты."},
   "downloadSettings": {
     "message": "Сохранение файлов"
   },
@@ -148,44 +111,19 @@
     "message": "Спрашивать каждый раз"
   },
   "locationDownloads": {
-    "message": "В папку загрузок по умолчанию"
+    "message": "В папку загрузок браузера"
   },
-  "locationHelp": {
-    "message": "Применяется и к видео, и к GIF."
-  },
-  "saveSettings": {
-    "message": "Сохранить настройки"
-  },
-  "resetSettings": {
-    "message": "Вернуть исходные"
-  },
-  "settingsFooter": {
-    "message": "Настройки сохраняются в этом профиле браузера."
-  },
-  "settingsUnsaved": {
-    "message": "Есть несохранённые изменения."
-  },
-  "settingsSaved": {
-    "message": "Сохранено. Настройки применятся к следующему скачиванию."
-  },
-  "settingsResetPending": {
-    "message": "В форме восстановлены исходные значения. Нажми «Сохранить настройки», чтобы применить."
-  },
+  "locationHelp": {"message":"Для видео и GIF."},
   "settingsLoadFailed": {
-    "message": "Не удалось прочитать сохранённые настройки. Попробуй ещё раз."
+    "message": "Не удалось загрузить настройки. Попробуйте снова."
   },
   "settingsSaveFailed": {
-    "message": "Не удалось сохранить настройки. Изменения не применены."
+    "message": "Не удалось сохранить изменение. Попробуйте снова."
   },
   "downloadCancelled": {
-    "message": "Скачивание отменено: вкладка или расширение были закрыты."
+    "message": "Скачивание отменено."
   },
-  "settingsHeadline": {
-    "message": "Загрузка по вашим правилам."
-  },
-  "settingsIntro": {
-    "message": "Выберите качество и удобные имена файлов. Скачивайте прямо из ленты."
-  },
+  "settingsHeadline": {"message":"Настройки"},
   "settingsSections": {
     "message": "Разделы настроек"
   },
@@ -198,75 +136,33 @@
   "filesTab": {
     "message": "Файлы и имена"
   },
-  "videoQualityTitle": {
-    "message": "Выберите качество видео"
-  },
-  "videoQualityIntro": {
-    "message": "Больше деталей или меньше размер файла? Видео сохраняются в MP4."
-  },
+  "videoQualityTitle": {"message":"Качество видео"},
   "videoPresets": {
     "message": "Готовые настройки видео"
   },
   "gifPresets": {
     "message": "Готовые настройки GIF"
   },
-  "presetBest": {
-    "message": "Высокое качество"
-  },
+  "presetBest": {"message":"Оригинал"},
   "presetBalanced": {
     "message": "Баланс"
   },
   "presetCompact": {
-    "message": "Маленький файл"
+    "message": "Компактное"
   },
-  "videoBestHint": {
-    "message": "Максимум доступных деталей"
-  },
+  "videoBestHint": {"message":"Исходные параметры"},
   "videoBalancedHint": {
-    "message": "До 720p"
+    "message": "720p при наличии"
   },
-  "videoCompactHint": {
-    "message": "Минимальный доступный битрейт"
-  },
-  "videoQualityLabel": {
-    "message": "Качество видео"
-  },
-  "qualityBest": {
-    "message": "Лучшее доступное"
-  },
-  "qualitySmallest": {
-    "message": "Самый маленький вариант"
-  },
-  "videoQualityHelp": {
-    "message": "Скачивается готовый MP4 с серверов X. Если нужного разрешения нет, выбирается ближайшее меньшее; если все больше — минимальное. Если разрешения неизвестны, используется лучшее качество."
-  },
-  "videoSoundNote": {
-    "message": "Выбранный MP4 сохраняется с его звуком, длительностью и частотой кадров."
-  },
-  "gifQualityTitle": {
-    "message": "Уменьшите GIF одним нажатием."
-  },
-  "gifQualityIntro": {
-    "message": "Начните с готового варианта. При желании настройте детали."
-  },
-  "gifQualityHint": {
-    "message": "100% · 20 кадр/с · 256 цветов"
-  },
-  "gifBalancedHint": {
-    "message": "50% · 15 кадр/с · 128 цветов"
-  },
-  "gifCompactHint": {
-    "message": "25% · 10 кадр/с · 64 цвета"
-  },
-  "fineTuneGif": {
-    "message": "Настроить плавность и цвета"
-  },
-  "filesTitle": {
-    "message": "Узнавайте файлы по имени."
-  },
-  "filesIntro": {
-    "message": "Выберите готовый вариант имени или создайте свой с помощью тегов."
-  },
+  "videoCompactHint": {"message":"Минимальный битрейт"},
+  "videoQualityLabel": {"message":"Разрешение"},
+  "qualityBest": {"message":"Оригинал"},
+  "videoQualityHelp": {"message":"Выбирает подходящий готовый MP4 с X."},
+  "gifQualityTitle": {"message":"Качество GIF"},
+  "gifQualityHint": {"message":"Исходное разрешение и FPS"},
+  "gifBalancedHint": {"message":"75% · 15 fps · 128 цветов"},
+  "gifCompactHint": {"message":"50% · 10 fps · 64 цвета"},
+  "filesTitle": {"message":"Имена файлов"},
   "namePresets": {
     "message": "Готовые имена файлов"
   },
@@ -285,39 +181,22 @@
   "gifNameLabel": {
     "message": "Имя GIF"
   },
-  "nameHelp": {
-    "message": "Расширение .mp4 или .gif добавится автоматически. Нажмите на тег, чтобы вставить его в выбранное поле."
-  },
+  "nameHelp": {"message":"Нажмите на тег, чтобы вставить. Расширение добавится само."},
   "availableTags": {
     "message": "Теги для имени файла"
   },
   "filenamePreview": {
     "message": "Предпросмотр имени"
   },
-  "previewSampleNote": {
-    "message": "Пример: пост от @alex за 20 сентября 2026 года."
-  },
-  "filenameSafety": {
-    "message": "Недопустимые символы заменяются автоматически. Существующие файлы не перезаписываются."
-  },
+  "filenameSafety": {"message":"При совпадении имён добавляется номер."},
   "tagReference": {
     "message": "Что означают теги"
   },
-  "tagMissingNote": {
-    "message": "Если автор, дата или разрешение неизвестны, подставляется «unknown», вместо отсутствующего текста — ID поста. Даты указаны по UTC. Для репостов и цитат используются данные исходного поста с медиа."
-  },
+  "tagMissingNote": {"message":"Нет текста — ID поста; нет других данных — unknown. Даты — UTC."},
   "folderLabel": {
     "message": "Подпапка (необязательно)"
   },
-  "folderHelp": {
-    "message": "Одна подпапка внутри папки загрузок браузера. Оставьте пустым, чтобы сохранять без подпапки. В диалоге сохранения можно выбрать другое место."
-  },
-  "applyNext": {
-    "message": "Изменения применятся к следующей загрузке."
-  },
-  "settingsReady": {
-    "message": "Текущие настройки"
-  },
+  "folderHelp": {"message":"Подпапка в папке загрузок браузера. Пусто — без подпапки."},
   "nameTemplateInvalid": {
     "message": "Введите шаблон имени длиной до 180 символов."
   },
@@ -331,7 +210,7 @@
     "message": "День у моря"
   },
   "tagAuthor": {
-    "message": "Имя автора без @"
+    "message": "Ник автора без @"
   },
   "tagId": {
     "message": "ID исходного поста"
@@ -379,5 +258,59 @@
   },
   "saveCancelled": {
     "message": "Сохранение отменено."
+  },
+  "allowVideoGifLabel": {"message": "Предлагать GIF для видео"},
+  "allowVideoGifHelp": {"message":"Выключено — видео сразу скачиваются в MP4 в быстром режиме."},
+  "advancedModeLabel": {"message": "Расширенный режим загрузки"},
+  "advancedModeHelp": {"message":"Формат и качество перед загрузкой, отдельно от быстрых настроек."},
+  "quickSettingsTitle": {"message": "Быстрые настройки"},
+  "settingsOpenFailed": {"message": "Не удалось открыть настройки."},
+  "videoBitrateLabel": {"message":"Битрейт, Мбит/с"},
+  "videoBitrateHelp": {"message":"Снижает битрейт. Пустое поле или край слева — оригинал."},
+  "videoFpsLabel": {"message":"Лимит FPS"},
+  "videoReencodeHint": {"message":"FPS или битрейт ниже исходного — перекодирование на устройстве."},
+  "videoFpsHelp": {"message":"Снижает FPS, но не повышает исходный."},
+  "mp4CodecUnavailable": {"message":"Перекодирование MP4 недоступно. Можно скачать готовый MP4."},
+  "advancedTitle": {"message": "Загрузка медиа"},
+  "advancedCancel": {"message": "Отмена"},
+  "advancedDownload": {"message": "Скачать"},
+  "originalQuality": {"message": "Оригинал"},
+  "mp4TooLarge": {"message":"MP4 больше 150 МиБ. Скачайте его без перекодирования."},
+  "mp4Unavailable": {"message":"Перекодирование недоступно. Скачайте готовый MP4."},
+  "mp4Failed": {"message":"Не удалось перекодировать MP4. Скачайте готовый MP4."},
+  "downloadOriginal": {"message": "Скачать без перекодирования"},
+  "mp4Converting": {"message": "Перекодирование MP4… $PERCENT$%", "placeholders": {"percent": {"content": "$1"}}},
+  "settingsAutoApply": {"message":"Изменения применяются автоматически."},
+  "advancedClose": {"message":"Закрыть"},
+  "advancedResourceWarning": {"message":"Создание GIF и перекодирование MP4 нагружают устройство. На слабых устройствах выбирайте MP4 без снижения FPS и битрейта."},
+  "sourceReference": {"message":"Лучшее доступное в X: $PROPERTIES$","placeholders":{"properties":{"content":"$1"}}},
+  "bitrateValue": {"message":"$VALUE$ Мбит/с","placeholders":{"value":{"content":"$1"}}},
+  "presetCustom": {"message":"Кастомное"},
+  "customQualityHint": {"message":"Ручные параметры"},
+  "customQualityOpen": {"message":"Настроить в новой вкладке"},
+  "gifResolutionHelp": {"message":"Масштаб ширины и высоты. 100% — исходный размер."},
+  "originalFrameRate": {"message":"Оригинальный FPS"},
+  "welcomeTitle": {
+    "message": "Добро пожаловать"
+  },
+  "welcomeHeadline": {"message":"Добро пожаловать!"},
+  "welcomeIntro": {"message":"Скачивайте видео и GIF из X. Качество и имена файлов — в настройках."},
+  "welcomeSettings": {
+    "message": "Настройки"
+  },
+  "welcomeClose": {
+    "message": "Закрыть"
+  },
+  "welcomeCloseFailed": {
+    "message": "Не удалось закрыть вкладку. Закройте её вручную."
+  },
+  "settingsLoadDefaults": {
+    "message": "Не удалось загрузить настройки. Показаны значения по умолчанию."
+  },
+  "bitrateInvalid": {
+    "message": "Введите от 0,25 до 50 Мбит/с или оставьте поле пустым."
+  },
+  "settingInvalid": {
+    "message": "Проверьте значение."
   }
 }

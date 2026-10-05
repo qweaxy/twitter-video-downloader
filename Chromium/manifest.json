@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Twitter Video Downloader",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "minimum_chrome_version": "116",
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
@@ -27,7 +27,8 @@
       "32": "icons/icon32.png",
       "48": "icons/icon48.png"
     },
-    "default_title": "Twitter Video Downloader"
+    "default_title": "Twitter Video Downloader",
+    "default_popup": "popup.html"
   },
   "background": {
     "service_worker": "service-worker.js"

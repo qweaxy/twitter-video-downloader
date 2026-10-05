@@ -29,7 +29,9 @@ function storeMetadata(tabId,id,items) {
   while (metadataOrder.size > MAX_POSTS || metadataSize > MAX_METADATA) forgetMetadata(metadataOrder.keys().next().value);
 }
 const monitor = new XFDResponseMonitor(browser.webRequest,remember);
-browser.browserAction.onClicked.addListener(() => { browser.runtime.openOptionsPage().catch(() => {}); });
+browser.runtime.onInstalled.addListener(details => {
+  if (details.reason === "install") browser.tabs.create({url:browser.runtime.getURL("welcome.html")}).catch(error => console.error("Could not open welcome page",error));
+});
 
 function remember(tabId, json) {
   if (stopping) return;
@@ -61,6 +63,9 @@ browser.tabs.onUpdated.addListener((tabId, change) => {
 });
 
 browser.runtime.onMessage.addListener(async (message, sender) => {
+  if (!stopping && sender.id === browser.runtime.id && ["options.html","popup.html"].some(page => sender.url?.split("#")[0] === browser.runtime.getURL(page)) && message?.type === "xfd:update-settings") {
+    return {ok:true,value:await XFDSettings.commit(message.patch)};
+  }
   if (stopping || !sender.tab || sender.frameId !== 0) return;
   let source;
   try { source = new URL(sender.url); } catch { return; }
@@ -82,21 +87,36 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     const ids = Array.isArray(message.ids) ? message.ids.slice(0, 100) : [];
     return Object.fromEntries(ids.filter(id => /^\d+$/.test(id)).map(id => [id, (cache?.get(id) || []).map(item => item.type)]));
   }
+  if (message?.type === "xfd:preferences") {
+    const settings = await XFDSettings.load();
+    const originals = (cache?.get(message.id) || []).map(item => {
+      const best = XFDMedia.selectVariant(item,"best");
+      return {width:best?.width || 0,height:best?.height || 0,bitrate:best?.bitrate || 0};
+    });
+    return {settings,profile:await XFDSettings.loadProfile(settings),originals};
+  }
+  if (message?.type === "xfd:update-profile") return {ok:true,value:await XFDSettings.commit(message.patch,true)};
   if (message?.type !== "xfd:download" || !/^\d+$/.test(message.id)) return;
   const media = cache?.get(message.id);
   if (!media?.length) return {ok: false, error: t("linkMissing")};
   const index = Number.isInteger(message.index) ? message.index : 0;
   let item = media[index];
   if (!item || !XFDMedia.mp4URL(item.url)) return {ok: false, error: t("variantUnavailable")};
-  let objectURL = null, conversion = null, timeout = null;
+  let objectURL = null, conversion = null, timeout = null, attemptedMp4Conversion = false;
   const operation = {tabId:sender.tab.id,controller:new AbortController(),timer:null};
   pendingDownloads.add(operation);
   try {
     let settings;
     try { settings = await XFDSettings.load(); }
     catch { return {ok:false,error:t("settingsLoadFailed")}; }
+    if (settings.advancedMode && message.profile) {
+      const profile = XFDSettings.normalizeProfile(message.profile,settings);
+      await XFDSettings.commit(profile,true);
+      settings = {...settings,...profile};
+    }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
-    if ((message.format !== undefined && !["mp4","gif"].includes(message.format)) || (item.type === "gif" && message.format === "mp4")) return {ok:false,error:t("variantUnavailable")};
+    if (message.format !== undefined && !["mp4","gif"].includes(message.format)) return {ok:false,error:t("variantUnavailable")};
+    if (!settings.advancedMode && !settings.allowVideoGif && item.type === "video" && message.format === "gif") return {ok:false,error:t("variantUnavailable")};
     item = {...item,type:message.format === "gif" ? "gif" : message.format === "mp4" ? "video" : item.type};
     item = XFDMedia.selectVariant(item,item.type === "gif" ? "best" : settings.videoQuality);
     if (!item) return {ok:false,error:t("variantUnavailable")};
@@ -118,6 +138,14 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       if (conversion.controller.signal.aborted) throw new Error("gifFailed");
       clearTimeout(timeout); timeout = null; conversion.timer = null;
       objectURL = URL.createObjectURL(blob);
+    } else if ((settings.advancedMode || settings.videoPreset === "custom") && (settings.videoFpsCap != null || settings.videoBitrateCap != null) && !message.original) {
+      attemptedMp4Conversion = true;
+      browser.tabs.sendMessage(sender.tab.id,{type:"xfd:converting",id:message.id,kind:"video",percent:0}).catch(() => {});
+      const blob = await XFDMP4.convert(item.url,settings,percent => {
+        browser.tabs.sendMessage(sender.tab.id,{type:"xfd:converting",id:message.id,kind:"video",percent}).catch(() => {});
+      },operation.controller.signal);
+      if (blob) objectURL = URL.createObjectURL(blob);
+      attemptedMp4Conversion = false;
     }
     if (stopping || operation.controller.signal.aborted) return {ok:false,error:t("downloadCancelled")};
     if (item.type === "gif") browser.tabs.sendMessage(sender.tab.id,{type:"xfd:saving",id:message.id}).catch(() => {});
@@ -127,7 +155,7 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
       ...(settings.saveLocation === "browser" ? {} : {saveAs:settings.saveLocation === "ask"})
     });
     if (stopping) return {ok:false,error:t("downloadCancelled")};
-    activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id, objectURL, kind:item.type});
+    activeDownloads.set(id, {tabId: sender.tab.id, postId: message.id, index, objectURL, kind:item.type});
     objectURL = null;  
      
     browser.downloads.search({id}).then(items => {
@@ -136,7 +164,9 @@ browser.runtime.onMessage.addListener(async (message, sender) => {
     return {ok: true};
   } catch (error) {
     if (TVDDownloadStatus.cancelled(error)) return {ok:false,error:t("saveCancelled")};
-    return {ok: false, error: t(item.type === "gif" ? (error.message === "gifTooLarge" ? "gifTooLarge" : "gifFailed") : "downloadFailed")};
+    const code = item.type === "gif" ? (error.message === "gifTooLarge" ? "gifTooLarge" : "gifFailed")
+      : attemptedMp4Conversion ? (["mp4TooLarge","mp4Unavailable"].includes(error.message) ? error.message : "mp4Failed") : "downloadFailed";
+    return {ok: false, error: t(code), original:attemptedMp4Conversion};
   } finally {
     if (objectURL) URL.revokeObjectURL(objectURL);
     if (timeout) clearTimeout(timeout);
@@ -158,7 +188,7 @@ async function finishDownload(delta, snapshot = null) {
   activeDownloads.delete(delta.id);
   if (item.objectURL) URL.revokeObjectURL(item.objectURL);
   browser.tabs.sendMessage(item.tabId, {
-    type:"xfd:finished", id:item.postId, kind:item.kind, ok:result === "complete", cancelled:result === "cancelled"
+    type:"xfd:finished", id:item.postId, index:item.index, kind:item.kind, ok:result === "complete", cancelled:result === "cancelled"
   }).catch(() => {});
 }
 browser.downloads.onChanged.addListener(delta => { finishDownload(delta).catch(() => {}); });
